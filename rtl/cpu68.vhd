@@ -3193,49 +3193,81 @@ begin
 									alu_ctrl <= alu_neg;
 									cc_ctrl <= load_cc;
 									md_ctrl <= load_md;
-									next_state <= stall_write_state;
+									if op_code(5) = '1' then
+										next_state <= stall_write_state;
+									else
+										next_state <= write8_state;
+									end if;
 								when "0011" => -- com
 									right_ctrl <= zero_right;
 									alu_ctrl <= alu_com;
 									cc_ctrl <= load_cc;
 									md_ctrl <= load_md;
-									next_state <= stall_write_state;
+									if op_code(5) = '1' then
+										next_state <= stall_write_state;
+									else
+										next_state <= write8_state;
+									end if;
 								when "0100" => -- lsr
 									right_ctrl <= zero_right;
 									alu_ctrl <= alu_lsr8;
 									cc_ctrl <= load_cc;
 									md_ctrl <= load_md;
-									next_state <= stall_write_state;
+									if op_code(5) = '1' then
+										next_state <= stall_write_state;
+									else
+										next_state <= write8_state;
+									end if;
 								when "0110" => -- ror
 									right_ctrl <= zero_right;
 									alu_ctrl <= alu_ror8;
 									cc_ctrl <= load_cc;
 									md_ctrl <= load_md;
-									next_state <= stall_write_state;
+									if op_code(5) = '1' then
+										next_state <= stall_write_state;
+									else
+										next_state <= write8_state;
+									end if;
 								when "0111" => -- asr
 									right_ctrl <= zero_right;
 									alu_ctrl <= alu_asr8;
 									cc_ctrl <= load_cc;
 									md_ctrl <= load_md;
-									next_state <= stall_write_state;
+									if op_code(5) = '1' then
+										next_state <= stall_write_state;
+									else
+										next_state <= write8_state;
+									end if;
 								when "1000" => -- asl
 									right_ctrl <= zero_right;
 									alu_ctrl <= alu_asl8;
 									cc_ctrl <= load_cc;
 									md_ctrl <= load_md;
-									next_state <= stall_write_state;
+									if op_code(5) = '1' then
+										next_state <= stall_write_state;
+									else
+										next_state <= write8_state;
+									end if;
 								when "1001" => -- rol
 									right_ctrl <= zero_right;
 									alu_ctrl <= alu_rol8;
 									cc_ctrl <= load_cc;
 									md_ctrl <= load_md;
-									next_state <= stall_write_state;
+									if op_code(5) = '1' then
+										next_state <= stall_write_state;
+									else
+										next_state <= write8_state;
+									end if;
 								when "1010" => -- dec
 									right_ctrl <= plus_one_right;
 									alu_ctrl <= alu_dec;
 									cc_ctrl <= load_cc;
 									md_ctrl <= load_md;
-									next_state <= stall_write_state;
+									if op_code(5) = '1' then
+										next_state <= stall_write_state;
+									else
+										next_state <= write8_state;
+									end if;
 								when "1011" => -- undefined
 									right_ctrl <= zero_right;
 									alu_ctrl <= alu_nop;
@@ -3247,7 +3279,11 @@ begin
 									alu_ctrl <= alu_inc;
 									cc_ctrl <= load_cc;
 									md_ctrl <= load_md;
-									next_state <= stall_write_state;
+									if op_code(5) = '1' then
+										next_state <= stall_write_state;
+									else
+										next_state <= write8_state;
+									end if;
 								when "1101" => -- tst
 									right_ctrl <= zero_right;
 									alu_ctrl <= alu_st8;
@@ -3265,7 +3301,11 @@ begin
 									alu_ctrl <= alu_clr;
 									cc_ctrl <= load_cc;
 									md_ctrl <= load_md;
-									next_state <= stall_write_state;
+									if op_code(5) = '1' then
+										next_state <= stall_write_state;
+									else
+										next_state <= write8_state;
+									end if;
 								when others => 
 									right_ctrl <= zero_right;
 									alu_ctrl <= alu_nop;
