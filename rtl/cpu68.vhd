@@ -3167,7 +3167,7 @@ begin
 					-- idle bus
 					addr_ctrl <= idle_ad;
 					dout_ctrl <= md_lo_dout;
-					next_state <= fetch_state;
+					next_state <= stall1_state;
 
 				when execute_state => -- execute single operand instruction
 					-- default
@@ -3313,7 +3313,7 @@ begin
 					-- write acca
 					addr_ctrl <= push_ad;
 					dout_ctrl <= acca_dout;
-					next_state <= fetch_state;
+					next_state <= stall1_state;
 
 				when pula_state => 
 					-- default registers
@@ -3336,7 +3336,7 @@ begin
 					acca_ctrl <= pull_acca;
 					addr_ctrl <= pull_ad;
 					dout_ctrl <= acca_dout;
-					next_state <= fetch_state;
+					next_state <= stall1_state;
 
 				when pshb_state => 
 					-- default registers
@@ -3358,7 +3358,7 @@ begin
 					-- write accb
 					addr_ctrl <= push_ad;
 					dout_ctrl <= accb_dout;
-					next_state <= fetch_state;
+					next_state <= stall1_state;
 
 				when pulb_state => 
 					-- default
@@ -3381,7 +3381,7 @@ begin
 					accb_ctrl <= pull_accb;
 					addr_ctrl <= pull_ad;
 					dout_ctrl <= accb_dout;
-					next_state <= fetch_state;
+					next_state <= stall1_state;
 
 				when pshx_lo_state => 
 					-- default
