@@ -124,7 +124,8 @@ architecture CPU_ARCH of cpu68 is
 	pulx_lo_state, pulx_hi_state, pshx_lo_state, pshx_hi_state, 
 	vect_lo_state, vect_hi_state, 
 	stall1_state, stall2_state, stall_write_state,
-	stall_write16_state, stall2_write_state, stall_idx_read_state);
+	stall_write16_state, stall2_write_state, stall_idx_read_state,
+	stall_jsr_state, stall2_jsr_state);
 	type addr_type is (idle_ad, fetch_ad, read_ad, write_ad, push_ad, pull_ad, int_hi_ad, int_lo_ad);
 	type dout_type is (md_lo_dout, md_hi_dout, acca_dout, accb_dout, ix_lo_dout, ix_hi_dout, cc_dout, pc_lo_dout, pc_hi_dout);
 	type op_type is (reset_op, fetch_op, latch_op);
@@ -1739,7 +1740,7 @@ begin
 									cc_ctrl <= latch_cc;
 									ix_ctrl <= load_ix;
 									sp_ctrl <= latch_sp;
-									next_state <= fetch_state;
+									next_state <= stall2_state;
 								when "0001" => -- ins
 									left_ctrl <= sp_left;
 									right_ctrl <= plus_one_right;
@@ -1780,7 +1781,7 @@ begin
 									cc_ctrl <= latch_cc;
 									ix_ctrl <= latch_ix;
 									sp_ctrl <= load_sp;
-									next_state <= fetch_state;
+									next_state <= stall2_state;
 								when "0110" => -- psha
 									left_ctrl <= sp_left;
 									right_ctrl <= zero_right;
@@ -2338,7 +2339,7 @@ begin
 									alu_ctrl <= alu_nop;
 									cc_ctrl <= latch_cc;
 									md_ctrl <= latch_md;
-									next_state <= jsr_state;
+									next_state <= stall_jsr_state;
 								when "1111" => -- sts
 									left_ctrl <= sp_left;
 									right_ctrl <= zero_right;
@@ -2352,7 +2353,11 @@ begin
 									alu_ctrl <= alu_nop;
 									cc_ctrl <= latch_cc;
 									md_ctrl <= latch_md;
-									next_state <= stall_idx_read_state;
+									if op_code(3 downto 0) = "1100" or op_code(3 downto 0) = "1110" then
+										next_state <= read8_state;
+									else
+										next_state <= stall_idx_read_state;
+									end if;
 						end case;
 						when "1110" => -- accb indexed
 							case op_code(3 downto 0) is
@@ -2383,7 +2388,11 @@ begin
 									alu_ctrl <= alu_nop;
 									cc_ctrl <= latch_cc;
 									md_ctrl <= latch_md;
-									next_state <= stall_idx_read_state;
+									if op_code(3 downto 0) = "1110" then
+										next_state <= read8_state;
+									else
+										next_state <= stall_idx_read_state;
+									end if;
 						end case;
 						when others => 
 							md_ctrl <= latch_md;
@@ -2444,7 +2453,7 @@ begin
 									alu_ctrl <= alu_nop;
 									cc_ctrl <= latch_cc;
 									md_ctrl <= latch_md;
-									next_state <= jsr_state;
+									next_state <= stall2_jsr_state;
 								when "1111" => -- sts
 									left_ctrl <= sp_left;
 									right_ctrl <= zero_right;
@@ -2877,7 +2886,7 @@ begin
 					pc_ctrl <= pull_lo_pc;
 					addr_ctrl <= pull_ad;
 					dout_ctrl <= pc_lo_dout;
-					next_state <= fetch_state;
+					next_state <= stall1_state;
 
 				when mul_state => 
 					-- default
@@ -4078,6 +4087,44 @@ begin
 					addr_ctrl <= idle_ad;
 					dout_ctrl <= md_lo_dout;
 					next_state <= stall_write_state;
+
+				when stall_jsr_state => -- Stall 1 cycle for JSR
+					acca_ctrl <= latch_acca;
+					accb_ctrl <= latch_accb;
+					ix_ctrl <= latch_ix;
+					sp_ctrl <= latch_sp;
+					pc_ctrl <= latch_pc;
+					md_ctrl <= latch_md;
+					iv_ctrl <= latch_iv;
+					op_ctrl <= latch_op;
+					nmi_ctrl <= latch_nmi;
+					ea_ctrl <= latch_ea;
+					left_ctrl <= acca_left;
+					right_ctrl <= zero_right;
+					alu_ctrl <= alu_nop;
+					cc_ctrl <= latch_cc;
+					addr_ctrl <= idle_ad;
+					dout_ctrl <= md_lo_dout;
+					next_state <= jsr_state;
+
+				when stall2_jsr_state => -- Stall 2 cycles for JSR
+					acca_ctrl <= latch_acca;
+					accb_ctrl <= latch_accb;
+					ix_ctrl <= latch_ix;
+					sp_ctrl <= latch_sp;
+					pc_ctrl <= latch_pc;
+					md_ctrl <= latch_md;
+					iv_ctrl <= latch_iv;
+					op_ctrl <= latch_op;
+					nmi_ctrl <= latch_nmi;
+					ea_ctrl <= latch_ea;
+					left_ctrl <= acca_left;
+					right_ctrl <= zero_right;
+					alu_ctrl <= alu_nop;
+					cc_ctrl <= latch_cc;
+					addr_ctrl <= idle_ad;
+					dout_ctrl <= md_lo_dout;
+					next_state <= stall_jsr_state;
 
 				when stall_idx_read_state =>
 					-- default
