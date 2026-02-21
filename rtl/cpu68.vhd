@@ -123,7 +123,8 @@ architecture CPU_ARCH of cpu68 is
 	pula_state, psha_state, pulb_state, pshb_state, 
 	pulx_lo_state, pulx_hi_state, pshx_lo_state, pshx_hi_state, 
 	vect_lo_state, vect_hi_state, 
-	stall1_state, stall2_state, stall_write_state);
+	stall1_state, stall2_state, stall_write_state,
+	stall_write16_state, stall2_write_state, stall_idx_read_state);
 	type addr_type is (idle_ad, fetch_ad, read_ad, write_ad, push_ad, pull_ad, int_hi_ad, int_lo_ad);
 	type dout_type is (md_lo_dout, md_hi_dout, acca_dout, accb_dout, ix_lo_dout, ix_hi_dout, cc_dout, pc_lo_dout, pc_hi_dout);
 	type op_type is (reset_op, fetch_op, latch_op);
@@ -2112,14 +2113,14 @@ begin
 									alu_ctrl <= alu_st8;
 									cc_ctrl <= latch_cc;
 									md_ctrl <= load_md;
-									next_state <= write8_state;
+									next_state <= stall_write_state;
 								when "1111" => -- sts direct
 									left_ctrl <= sp_left;
 									right_ctrl <= zero_right;
 									alu_ctrl <= alu_st16;
 									cc_ctrl <= latch_cc;
 									md_ctrl <= load_md;
-									next_state <= write16_state;
+									next_state <= stall_write16_state;
 								when "1101" => -- jsr direct
 									left_ctrl <= acca_left;
 									right_ctrl <= zero_right;
@@ -2199,21 +2200,21 @@ begin
 									alu_ctrl <= alu_st8;
 									cc_ctrl <= latch_cc;
 									md_ctrl <= load_md;
-									next_state <= write8_state;
+									next_state <= stall_write_state;
 								when "1101" => -- std direct
 									left_ctrl <= accd_left;
 									right_ctrl <= zero_right;
 									alu_ctrl <= alu_st16;
 									cc_ctrl <= latch_cc;
 									md_ctrl <= load_md;
-									next_state <= write16_state;
+									next_state <= stall_write16_state;
 								when "1111" => -- stx direct
 									left_ctrl <= ix_left;
 									right_ctrl <= zero_right;
 									alu_ctrl <= alu_st16;
 									cc_ctrl <= latch_cc;
 									md_ctrl <= load_md;
-									next_state <= write16_state;
+									next_state <= stall_write16_state;
 								when others => 
 									left_ctrl <= acca_left;
 									right_ctrl <= zero_right;
@@ -2330,7 +2331,7 @@ begin
 									alu_ctrl <= alu_st8;
 									cc_ctrl <= latch_cc;
 									md_ctrl <= load_md;
-									next_state <= write8_state;
+									next_state <= stall2_write_state;
 								when "1101" => -- jsr
 									left_ctrl <= acca_left;
 									right_ctrl <= zero_right;
@@ -2344,14 +2345,14 @@ begin
 									alu_ctrl <= alu_st16;
 									cc_ctrl <= latch_cc;
 									md_ctrl <= load_md;
-									next_state <= write16_state;
+									next_state <= stall_write16_state; -- STS indexed is 7 cycles, wait, no it's different. hardware says 6. Let's make it 6. stall_write16_state adds 1 to 5. making it 6.
 								when others => 
 									left_ctrl <= acca_left;
 									right_ctrl <= zero_right;
 									alu_ctrl <= alu_nop;
 									cc_ctrl <= latch_cc;
 									md_ctrl <= latch_md;
-									next_state <= read8_state;
+									next_state <= stall_idx_read_state;
 						end case;
 						when "1110" => -- accb indexed
 							case op_code(3 downto 0) is
@@ -2361,28 +2362,28 @@ begin
 									alu_ctrl <= alu_st8;
 									cc_ctrl <= latch_cc;
 									md_ctrl <= load_md;
-									next_state <= write8_state;
+									next_state <= stall2_write_state;
 								when "1101" => -- std direct
 									left_ctrl <= accd_left;
 									right_ctrl <= zero_right;
 									alu_ctrl <= alu_st16;
 									cc_ctrl <= latch_cc;
 									md_ctrl <= load_md;
-									next_state <= write16_state;
+									next_state <= stall_write16_state; -- STD/STX are 1 cycle slower in indexed than direct. direct was 5. let's add 1.
 								when "1111" => -- stx direct
 									left_ctrl <= ix_left;
 									right_ctrl <= zero_right;
 									alu_ctrl <= alu_st16;
 									cc_ctrl <= latch_cc;
 									md_ctrl <= load_md;
-									next_state <= write16_state;
+									next_state <= stall_write16_state;
 								when others => 
 									left_ctrl <= acca_left;
 									right_ctrl <= zero_right;
 									alu_ctrl <= alu_nop;
 									cc_ctrl <= latch_cc;
 									md_ctrl <= latch_md;
-									next_state <= read8_state;
+									next_state <= stall_idx_read_state;
 						end case;
 						when others => 
 							md_ctrl <= latch_md;
@@ -2436,7 +2437,7 @@ begin
 									alu_ctrl <= alu_st8;
 									cc_ctrl <= latch_cc;
 									md_ctrl <= load_md;
-									next_state <= write8_state;
+									next_state <= stall_write_state;
 								when "1101" => -- jsr
 									left_ctrl <= acca_left;
 									right_ctrl <= zero_right;
@@ -2450,7 +2451,7 @@ begin
 									alu_ctrl <= alu_st16;
 									cc_ctrl <= latch_cc;
 									md_ctrl <= load_md;
-									next_state <= write16_state;
+									next_state <= stall_write16_state;
 								when others => 
 									left_ctrl <= acca_left;
 									right_ctrl <= zero_right;
@@ -2467,21 +2468,21 @@ begin
 									alu_ctrl <= alu_st8;
 									cc_ctrl <= latch_cc;
 									md_ctrl <= load_md;
-									next_state <= write8_state;
+									next_state <= stall_write_state;
 								when "1101" => -- std
 									left_ctrl <= accd_left;
 									right_ctrl <= zero_right;
 									alu_ctrl <= alu_st16;
 									cc_ctrl <= latch_cc;
 									md_ctrl <= load_md;
-									next_state <= write16_state;
+									next_state <= stall_write16_state;
 								when "1111" => -- stx
 									left_ctrl <= ix_left;
 									right_ctrl <= zero_right;
 									alu_ctrl <= alu_st16;
 									cc_ctrl <= latch_cc;
 									md_ctrl <= load_md;
-									next_state <= write16_state;
+									next_state <= stall_write16_state;
 								when others => 
 									left_ctrl <= acca_left;
 									right_ctrl <= zero_right;
@@ -2617,7 +2618,7 @@ begin
 									cc_ctrl <= latch_cc;
 									md_ctrl <= fetch_first_md;
 									ea_ctrl <= latch_ea;
-									next_state <= execute_state;
+									next_state <= fetch_state;
 						end case;
 						when others => 
 							left_ctrl <= acca_left;
@@ -4033,6 +4034,72 @@ begin
 					addr_ctrl <= idle_ad;
 					dout_ctrl <= md_lo_dout;
 					next_state <= write8_state;
+
+				when stall_write16_state =>
+					-- default
+					acca_ctrl <= latch_acca;
+					accb_ctrl <= latch_accb;
+					ix_ctrl <= latch_ix;
+					sp_ctrl <= latch_sp;
+					pc_ctrl <= latch_pc;
+					md_ctrl <= latch_md;
+					iv_ctrl <= latch_iv;
+					op_ctrl <= latch_op;
+					nmi_ctrl <= latch_nmi;
+					ea_ctrl <= latch_ea;
+					-- do nothing in ALU
+					left_ctrl <= acca_left;
+					right_ctrl <= zero_right;
+					alu_ctrl <= alu_nop;
+					cc_ctrl <= latch_cc;
+					-- idle bus cycle
+					addr_ctrl <= idle_ad;
+					dout_ctrl <= md_lo_dout;
+					next_state <= write16_state;
+
+				when stall2_write_state =>
+					-- default
+					acca_ctrl <= latch_acca;
+					accb_ctrl <= latch_accb;
+					ix_ctrl <= latch_ix;
+					sp_ctrl <= latch_sp;
+					pc_ctrl <= latch_pc;
+					md_ctrl <= latch_md;
+					iv_ctrl <= latch_iv;
+					op_ctrl <= latch_op;
+					nmi_ctrl <= latch_nmi;
+					ea_ctrl <= latch_ea;
+					-- do nothing in ALU
+					left_ctrl <= acca_left;
+					right_ctrl <= zero_right;
+					alu_ctrl <= alu_nop;
+					cc_ctrl <= latch_cc;
+					-- idle bus cycle
+					addr_ctrl <= idle_ad;
+					dout_ctrl <= md_lo_dout;
+					next_state <= stall_write_state;
+
+				when stall_idx_read_state =>
+					-- default
+					acca_ctrl <= latch_acca;
+					accb_ctrl <= latch_accb;
+					ix_ctrl <= latch_ix;
+					sp_ctrl <= latch_sp;
+					pc_ctrl <= latch_pc;
+					md_ctrl <= latch_md;
+					iv_ctrl <= latch_iv;
+					op_ctrl <= latch_op;
+					nmi_ctrl <= latch_nmi;
+					ea_ctrl <= latch_ea;
+					-- do nothing in ALU
+					left_ctrl <= acca_left;
+					right_ctrl <= zero_right;
+					alu_ctrl <= alu_nop;
+					cc_ctrl <= latch_cc;
+					-- idle bus cycle
+					addr_ctrl <= idle_ad;
+					dout_ctrl <= md_lo_dout;
+					next_state <= read8_state;
 
 				when others => -- error state halt on undefine states
 					-- default
