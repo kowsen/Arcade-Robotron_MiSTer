@@ -607,8 +607,15 @@ arcade_video #(296,8) arcade_video
 
 ///////////////////////////////////////////////////////////////////
 
+logic [19:0] speech_filter;
+
+always @(posedge clk_sys) begin
+	// cvsd low-pass filter
+	speech_filter <= speech_filter - {4'd0, speech_filter[19:4]} + {4'd0, speech};
+end
+
 logic [16:0] audsum;
-assign audsum = {audio, 8'd0} + speech;
+assign audsum = {audio, 8'd0} + speech_filter[19:4];
 assign AUDIO_L = {1'b0, audsum[16:3]};
 assign AUDIO_R = AUDIO_L;
 assign AUDIO_S = 0;
