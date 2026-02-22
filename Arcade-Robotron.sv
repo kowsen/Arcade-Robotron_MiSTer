@@ -605,7 +605,10 @@ arcade_video #(296,8) arcade_video
 	.fx(status[5:3])
 );
 
-// Apply 3500Hz 2nd-order Butterworth low-pass filter to the CVSD speech channel
+///////////////////////////////////////////////////////////////////
+
+// Apply 1200Hz 2nd-order Butterworth low-pass filter to the CVSD speech channel
+// Coefficients: [B, A] = butter(2, 1200/(46875/2)) scaled by 2^15
 wire signed [15:0] signed_speech = speech - 16'h8000;
 wire signed [15:0] filtered_speech_signed;
 
@@ -615,14 +618,14 @@ iir_2nd_order #(
     .DATA_WIDTH(16),
     .COUNT_BITS(12)
 ) speech_lpf_iir (
-	.clk(clk_sys),
+	.clk(clk_sys), // 12MHz
 	.reset(reset),
 	.div(12'd256), // 12MHz / 256 ~= 46.875kHz sample frequency
-	.A2(-22'sd46636),
-	.A3(22'sd17688),
-	.B1(22'sd474),
-	.B2(22'sd948),
-	.B3(22'sd474),
+	.A2(-22'sd58109),
+	.A3(22'sd26101),
+	.B1(22'sd190),
+	.B2(22'sd380),
+	.B3(22'sd190),
     .in(signed_speech),
 	.out(filtered_speech_signed)
 );
