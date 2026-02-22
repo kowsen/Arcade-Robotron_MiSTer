@@ -273,7 +273,7 @@ spch_rom_we <= '1' when dl_wr = '1' and dl_addr(16 downto 12) >= x"E" else '0'; 
 sound_board : entity work.williams_sound_board
 port map(
 	clock         => clock,
-	reset         => BTN(0),
+	reset         => not cpu_reset_n,
 	hand          => hand,
 	select_sound  => select_sound,
 	audio_out     => audio_out,

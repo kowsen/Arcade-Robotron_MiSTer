@@ -109,7 +109,7 @@ end williams_cpu;
 architecture Behavioral of williams_cpu is
 
     signal reset_request            : std_logic;
-    signal reset_counter            : unsigned(15 downto 0);
+    signal reset_counter            : unsigned(7 downto 0);
     signal reset                    : std_logic;
 
     signal clock_12_phase           : unsigned(11 downto 0) := (0 => '1', others => '0');
@@ -1008,7 +1008,7 @@ begin
                 reset_counter <= (others => '0');
                 reset <= '1';
             else
-                if reset_counter < 60000 then
+                if reset_counter < 100 then
                     reset_counter <= reset_counter + 1;
                 else
                     reset <= '0';
