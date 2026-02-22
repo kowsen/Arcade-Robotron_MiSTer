@@ -2666,7 +2666,7 @@ begin
 					md_ctrl <= fetch_next_md;
 					addr_ctrl <= read_ad;
 					dout_ctrl <= md_lo_dout;
-					next_state <= stall1_state;
+					next_state <= fetch_state;
 					--
 					-- 16 bit Write state
 					-- write high byte of ALU output.
