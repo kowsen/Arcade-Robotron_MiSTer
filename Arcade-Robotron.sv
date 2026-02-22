@@ -607,45 +607,55 @@ arcade_video #(296,8) arcade_video
 
 ///////////////////////////////////////////////////////////////////
 
-// Cascaded dual 1st-order low-pass filters for Sinistar CVSD speech
-// Replicates an analog RC filter cascade. Each stage is ~1800Hz to achieve a combined -6dB cutoff of ~1200Hz.
-// Coefficients: [B, A] = butter(1, 1800/(46875/2)) scaled by 2^15
+// Hardware-Accurate 4th-Order Sinistar CVSD Speech Filter
+// Replicates the cascaded Multiple Feedback (MFB) active filters from the original Williams sound board.
+// Stage 1: MFB LPF (~3473 Hz, Q=0.69)
+// Stage 2: MFB LPF (~3330 Hz, Q=0.70)
+// Combined, they form a remarkably flat 4th-order "brick wall" at ~3.4 kHz.
+
 wire signed [15:0] signed_speech = speech - 16'h8000;
 wire signed [15:0] speech_stage_1;
 wire signed [15:0] filtered_speech_signed;
 
-iir_1st_order #(
+// OP-AMP 1
+iir_2nd_order #(
     .COEFF_WIDTH(22),
     .COEFF_SCALE(15),
     .DATA_WIDTH(16),
     .COUNT_BITS(12)
 ) speech_lpf_stage1 (
-	.clk(clk_sys), // 12MHz
-	.reset(reset),
-	.div(12'd256), // 12MHz / 256 ~= 46.875kHz sample frequency
-	.A2(-22'sd25682),
-	.B1(22'sd3543),
-	.B2(22'sd3543),
+    .clk(clk_sys), 
+    .reset(reset),
+    .div(12'd256), // ~46.875kHz sample rate
+    .A2(-22'sd44264), 
+    .A3(22'sd16763),
+    .B1(22'sd1317),    
+    .B2(22'sd2633),
+    .B3(22'sd1317),
     .in(signed_speech),
-	.out(speech_stage_1)
+    .out(speech_stage_1)
 );
 
-iir_1st_order #(
+// OP-AMP 2
+iir_2nd_order #(
     .COEFF_WIDTH(22),
     .COEFF_SCALE(15),
     .DATA_WIDTH(16),
     .COUNT_BITS(12)
 ) speech_lpf_stage2 (
-	.clk(clk_sys), // 12MHz
-	.reset(reset),
-	.div(12'd256), // 12MHz / 256 ~= 46.875kHz sample frequency
-	.A2(-22'sd25682),
-	.B1(22'sd3543),
-	.B2(22'sd3543),
+    .clk(clk_sys), 
+    .reset(reset),
+    .div(12'd256), // ~46.875kHz sample rate
+    .A2(-22'sd45172), 
+    .A3(22'sd17306),
+    .B1(22'sd1225),    
+    .B2(22'sd2452), // Adjusted by 1 for perfect unity gain sum (32768)
+    .B3(22'sd1225),
     .in(speech_stage_1),
-	.out(filtered_speech_signed)
+    .out(filtered_speech_signed)
 );
 
+// Final mix output (replaces Op-Amp 3)
 wire [15:0] filtered_speech_unsigned = filtered_speech_signed + 16'h8000;
 
 logic [16:0] audsum;
