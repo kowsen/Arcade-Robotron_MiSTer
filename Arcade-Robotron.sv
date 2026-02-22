@@ -607,55 +607,82 @@ arcade_video #(296,8) arcade_video
 
 ///////////////////////////////////////////////////////////////////
 
-// Hardware-Accurate 4th-Order Sinistar CVSD Speech Filter
-// Replicates the cascaded Multiple Feedback (MFB) active filters from the original Williams sound board.
-// Stage 1: MFB LPF (~3473 Hz, Q=0.69, Gain=4.18)
-// Stage 2: MFB LPF (~3330 Hz, Q=0.70, Gain=1.00)
+// 1st-Order Filter Cascade (Replicating the Williams System 9 Dual Op-Amp Filter)
+// Total Frequency Cutoff: ~3400 Hz (approx. 4.5 kHz per individual stage to account for cascading)
+// Total Gain: ~4.18x (Distributed as 1.43x gain per stage for the first three stages)
 
-wire signed [15:0] signed_speech = speech - 16'h8000;
-wire signed [15:0] speech_stage_1;
-wire signed [15:0] filtered_speech_signed;
+wire signed [15:0] s_in = speech - 16'h8000;
+wire signed [15:0] s1, s2, s3, s_out;
 
-// OP-AMP 1
-iir_2nd_order #(
+// STAGE 1 (Gain 1.43x)
+iir_1st_order #(
     .COEFF_WIDTH(22),
     .COEFF_SCALE(15),
     .DATA_WIDTH(16),
     .COUNT_BITS(12)
 ) speech_lpf_stage1 (
-    .clk(clk_sys), 
+    .clk(clk_sys),
     .reset(reset),
     .div(12'd256), // ~46.875kHz sample rate
-    .A2(-22'sd53169), 
-    .A3(22'sd23491),
-    .B1(22'sd3229),
-    .B2(22'sd6458),
-    .B3(22'sd3229),
-    .in(signed_speech),
-    .out(speech_stage_1)
+    .A2(-22'sd17736),
+    .B1(22'sd10741),
+    .B2(22'sd10741),
+    .in(s_in),
+    .out(s1)
 );
 
-// OP-AMP 2
-iir_2nd_order #(
+// STAGE 2 (Gain 1.43x)
+iir_1st_order #(
     .COEFF_WIDTH(22),
     .COEFF_SCALE(15),
     .DATA_WIDTH(16),
     .COUNT_BITS(12)
 ) speech_lpf_stage2 (
-    .clk(clk_sys), 
+    .clk(clk_sys),
     .reset(reset),
-    .div(12'd256), // ~46.875kHz sample rate
-    .A2(-22'sd45172), 
-    .A3(22'sd17306),
-    .B1(22'sd1225),    
-    .B2(22'sd2452), // Adjusted by 1 for perfect unity gain sum (32768)
-    .B3(22'sd1225),
-    .in(speech_stage_1),
-    .out(filtered_speech_signed)
+    .div(12'd256),
+    .A2(-22'sd17736),
+    .B1(22'sd10741),
+    .B2(22'sd10741),
+    .in(s1),
+    .out(s2)
 );
 
-// Final mix output (replaces Op-Amp 3)
-wire [15:0] filtered_speech_unsigned = filtered_speech_signed + 16'h8000;
+// STAGE 3 (Gain 1.43x)
+iir_1st_order #(
+    .COEFF_WIDTH(22),
+    .COEFF_SCALE(15),
+    .DATA_WIDTH(16),
+    .COUNT_BITS(12)
+) speech_lpf_stage3 (
+    .clk(clk_sys),
+    .reset(reset),
+    .div(12'd256),
+    .A2(-22'sd17736),
+    .B1(22'sd10741),
+    .B2(22'sd10741),
+    .in(s2),
+    .out(s3)
+);
+
+// STAGE 4 (Gain 1.0x - Final Smoothing)
+iir_1st_order #(
+    .COEFF_WIDTH(22),
+    .COEFF_SCALE(15),
+    .DATA_WIDTH(16),
+    .COUNT_BITS(12)
+) speech_lpf_stage4 (
+    .clk(clk_sys),
+    .reset(reset),
+    .div(12'd256),
+    .A2(-22'sd17736),
+    .B1(22'sd7514),
+    .B2(22'sd7514),
+    .in(s3),
+    .out(s_out)
+);
+
+wire [15:0] filtered_speech_unsigned = s_out + 16'h8000;
 
 logic [16:0] audsum;
 assign audsum = {audio, 8'd0} + (mod == mod_sinistar ? filtered_speech_unsigned : speech);
