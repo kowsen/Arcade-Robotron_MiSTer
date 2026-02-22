@@ -607,26 +607,42 @@ arcade_video #(296,8) arcade_video
 
 ///////////////////////////////////////////////////////////////////
 
-// Apply 1200Hz 2nd-order Butterworth low-pass filter to the CVSD speech channel
-// Coefficients: [B, A] = butter(2, 1200/(46875/2)) scaled by 2^15
+// Cascaded dual 1st-order low-pass filters for Sinistar CVSD speech
+// Replicates an analog RC filter cascade. Each stage is ~1800Hz to achieve a combined -6dB cutoff of ~1200Hz.
+// Coefficients: [B, A] = butter(1, 1800/(46875/2)) scaled by 2^15
 wire signed [15:0] signed_speech = speech - 16'h8000;
+wire signed [15:0] speech_stage_1;
 wire signed [15:0] filtered_speech_signed;
 
-iir_2nd_order #(
+iir_1st_order #(
     .COEFF_WIDTH(22),
     .COEFF_SCALE(15),
     .DATA_WIDTH(16),
     .COUNT_BITS(12)
-) speech_lpf_iir (
+) speech_lpf_stage1 (
 	.clk(clk_sys), // 12MHz
 	.reset(reset),
 	.div(12'd256), // 12MHz / 256 ~= 46.875kHz sample frequency
-	.A2(-22'sd58109),
-	.A3(22'sd26101),
-	.B1(22'sd190),
-	.B2(22'sd380),
-	.B3(22'sd190),
+	.A2(-22'sd25682),
+	.B1(22'sd3543),
+	.B2(22'sd3543),
     .in(signed_speech),
+	.out(speech_stage_1)
+);
+
+iir_1st_order #(
+    .COEFF_WIDTH(22),
+    .COEFF_SCALE(15),
+    .DATA_WIDTH(16),
+    .COUNT_BITS(12)
+) speech_lpf_stage2 (
+	.clk(clk_sys), // 12MHz
+	.reset(reset),
+	.div(12'd256), // 12MHz / 256 ~= 46.875kHz sample frequency
+	.A2(-22'sd25682),
+	.B1(22'sd3543),
+	.B2(22'sd3543),
+    .in(speech_stage_1),
 	.out(filtered_speech_signed)
 );
 
