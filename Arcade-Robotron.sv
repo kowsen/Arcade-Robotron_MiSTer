@@ -607,14 +607,14 @@ arcade_video #(296,8) arcade_video
 
 ///////////////////////////////////////////////////////////////////
 
-// 1st-Order Filter Cascade (Replicating the Williams System 9 Dual Op-Amp Filter)
-// Total Frequency Cutoff: ~3400 Hz (approx. 4.5 kHz per individual stage to account for cascading)
-// Total Gain: ~4.18x (Distributed as 1.43x gain per stage for the first three stages)
+// filter cascade replicating dual op-amp low pass filter
+// Frequency: ~3400Hz total cutoff
+// Gain: ~4.0x
 
 wire signed [15:0] s_in = speech - 16'h8000;
 wire signed [15:0] s1, s2, s3, s_out;
 
-// STAGE 1 (Gain 1.43x)
+// STAGE 1
 iir_1st_order #(
     .COEFF_WIDTH(22),
     .COEFF_SCALE(15),
@@ -624,14 +624,14 @@ iir_1st_order #(
     .clk(clk_sys),
     .reset(reset),
     .div(12'd256), // ~46.875kHz sample rate
-    .A2(-22'sd17736),
-    .B1(22'sd10741),
-    .B2(22'sd10741),
+    .A2(-22'sd20502),
+    .B1(22'sd6133),
+    .B2(22'sd6133),
     .in(s_in),
     .out(s1)
 );
 
-// STAGE 2 (Gain 1.43x)
+// STAGE 2
 iir_1st_order #(
     .COEFF_WIDTH(22),
     .COEFF_SCALE(15),
@@ -641,14 +641,14 @@ iir_1st_order #(
     .clk(clk_sys),
     .reset(reset),
     .div(12'd256),
-    .A2(-22'sd17736),
-    .B1(22'sd10741),
-    .B2(22'sd10741),
+    .A2(-22'sd20502),
+    .B1(22'sd6133),
+    .B2(22'sd6133),
     .in(s1),
     .out(s2)
 );
 
-// STAGE 3 (Gain 1.43x)
+// STAGE 3
 iir_1st_order #(
     .COEFF_WIDTH(22),
     .COEFF_SCALE(15),
@@ -658,14 +658,14 @@ iir_1st_order #(
     .clk(clk_sys),
     .reset(reset),
     .div(12'd256),
-    .A2(-22'sd17736),
-    .B1(22'sd10741),
-    .B2(22'sd10741),
+    .A2(-22'sd20502),
+    .B1(22'sd6133),
+    .B2(22'sd6133),
     .in(s2),
     .out(s3)
 );
 
-// STAGE 4 (Gain 1.0x - Final Smoothing)
+// STAGE 4
 iir_1st_order #(
     .COEFF_WIDTH(22),
     .COEFF_SCALE(15),
@@ -675,14 +675,28 @@ iir_1st_order #(
     .clk(clk_sys),
     .reset(reset),
     .div(12'd256),
-    .A2(-22'sd17736),
-    .B1(22'sd7514),
-    .B2(22'sd7514),
+    .A2(-22'sd20502),
+    .B1(22'sd6133),
+    .B2(22'sd6133),
     .in(s3),
     .out(s_out)
 );
 
-wire [15:0] filtered_speech_unsigned = s_out + 16'h8000;
+// GAIN & SATURATION (Replicating 4.18x Analog Boost)
+// Left-shifting by 2 bits provides a clean 4.0x gain.
+wire signed [17:0] s_boosted = $signed(s_out) <<< 2;
+reg  signed [15:0] s_final;
+
+always @(*) begin
+    if (s_boosted > 32767)
+        s_final = 16'sh7FFF; // Saturate at positive limit
+    else if (s_boosted < -32768)
+        s_final = 16'sh8000; // Saturate at negative limit
+    else
+        s_final = s_boosted[15:0];
+end
+
+wire [15:0] filtered_speech_unsigned = s_final + 16'h8000;
 
 logic [16:0] audsum;
 assign audsum = {audio, 8'd0} + (mod == mod_sinistar ? filtered_speech_unsigned : speech);
