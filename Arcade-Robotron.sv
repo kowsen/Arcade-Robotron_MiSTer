@@ -609,9 +609,8 @@ arcade_video #(296,8) arcade_video
 
 // Hardware-Accurate 4th-Order Sinistar CVSD Speech Filter
 // Replicates the cascaded Multiple Feedback (MFB) active filters from the original Williams sound board.
-// Stage 1: MFB LPF (~3473 Hz, Q=0.69)
-// Stage 2: MFB LPF (~3330 Hz, Q=0.70)
-// Combined, they form a remarkably flat 4th-order "brick wall" at ~3.4 kHz.
+// Stage 1: MFB LPF (~3473 Hz, Q=0.69, Gain=4.18)
+// Stage 2: MFB LPF (~3330 Hz, Q=0.70, Gain=1.00)
 
 wire signed [15:0] signed_speech = speech - 16'h8000;
 wire signed [15:0] speech_stage_1;
@@ -627,11 +626,11 @@ iir_2nd_order #(
     .clk(clk_sys), 
     .reset(reset),
     .div(12'd256), // ~46.875kHz sample rate
-    .A2(-22'sd44264), 
-    .A3(22'sd16763),
-    .B1(22'sd1317),    
-    .B2(22'sd2633),
-    .B3(22'sd1317),
+    .A2(-22'sd53169), 
+    .A3(22'sd23491),
+    .B1(22'sd3229),
+    .B2(22'sd6458),
+    .B3(22'sd3229),
     .in(signed_speech),
     .out(speech_stage_1)
 );
