@@ -633,7 +633,6 @@ iir_2nd_order #(
 wire [15:0] filtered_speech_unsigned = filtered_speech_signed + 16'h8000;
 
 logic [16:0] audsum;
-// Only apply the speech filter for Sinistar
 assign audsum = {audio, 8'd0} + (mod == mod_sinistar ? filtered_speech_unsigned : speech);
 assign AUDIO_L = {1'b0, audsum[16:3]};
 assign AUDIO_R = AUDIO_L;
