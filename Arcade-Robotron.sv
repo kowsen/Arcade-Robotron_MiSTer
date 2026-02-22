@@ -605,17 +605,33 @@ arcade_video #(296,8) arcade_video
 	.fx(status[5:3])
 );
 
-///////////////////////////////////////////////////////////////////
+// Apply 3500Hz 2nd-order Butterworth low-pass filter to the CVSD speech channel
+wire signed [15:0] signed_speech = speech - 16'h8000;
+wire signed [15:0] filtered_speech_signed;
 
-logic [19:0] speech_filter;
+iir_2nd_order #(
+    .COEFF_WIDTH(22),
+    .COEFF_SCALE(15),
+    .DATA_WIDTH(16),
+    .COUNT_BITS(12)
+) speech_lpf_iir (
+	.clk(clk_sys),
+	.reset(reset),
+	.div(12'd256), // 12MHz / 256 ~= 48kHz
+	.A2(-22'sd54744),
+	.A3(22'sd23517),
+	.B1(22'sd385),
+	.B2(22'sd771),
+	.B3(22'sd385),
+    .in(signed_speech),
+	.out(filtered_speech_signed)
+);
 
-always @(posedge clk_sys) begin
-	// cvsd low-pass filter
-	speech_filter <= speech_filter - {4'd0, speech_filter[19:4]} + {4'd0, speech};
-end
+wire [15:0] filtered_speech_unsigned = filtered_speech_signed + 16'h8000;
 
 logic [16:0] audsum;
-assign audsum = {audio, 8'd0} + speech_filter[19:4];
+// Only apply the speech filter for Sinistar
+assign audsum = {audio, 8'd0} + (mod == mod_sinistar ? filtered_speech_unsigned : speech);
 assign AUDIO_L = {1'b0, audsum[16:3]};
 assign AUDIO_R = AUDIO_L;
 assign AUDIO_S = 0;
