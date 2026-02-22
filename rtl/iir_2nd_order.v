@@ -117,30 +117,26 @@ module iir_2nd_order
  
  
  // Usage:
- // Design your 2nd order iir low/high-pass with a tool that will give you the
+ // Design your 1st order iir low/high-pass with a tool that will give you the
  // filter coefficients for the difference equation.  Filter coefficients can
  // be generated in Octave/matlab/scipy using a command similar to
- // [B, A] = butter( 2, 3500/(46875/2), 'low') for a 3500 hz 2nd order low-pass
- // assuming 46875Hz sample rate (12Mhz / 256).
+ // [B, A] = butter( 2, 5000/(48000/2), 'low') for a 5000 hz 2nd order low-pass
+ // assuming 48000Hz sample rate.
  // 
  // Output is:
- // B = [ 0.014467   0.028935   0.014467]
- // A = [1.00000  -1.42323   0.53982] // note: a1 is actually negative in the standard equation but B1x0 + B2x1 + B3x2 - a1y0 - a2y1
+ // B = [ 0.072231   0.144462   0.072231]
+ // A = [1.00000  -1.10923   0.39815]
  //
  // Then scale coefficients by multiplying by 2^COEFF_SCALE and round to nearest integer
  // Make sure your coefficients can be stored as a signed number with COEFF_WIDTH bits.
  //
- // B = [474   948   474]
- // A = [32768  -46636    17688] (scale=15)
+ // B = [1183   2367   1183]
+ // A = [16384  -18174    6523]
  //
  // Discard A(1) because it is assumed 1.0 before scaling
  //
- // This leaves you with A2 = -46636 , A3 = 17688, B1 = 474 , B2 = 948 , B3 = 474
- // Note: For this module A2 is a1 (delayed 1 sample), A3 is a2 (delayed 2 samples)
- // But the formula in this module calculates: (B1*x0 + B2*x1 + B3*x2) - (A2*y0 + A3*y1)
- // Therefore, A2 (module input) corresponds to standard a1, A3 (module input) corresponds to standard a2.
- // So you must use A2 = -46636, A3 = 17688
- // B1 + B2 + B3 - A2 - A3 should sum to 2^COEFF_SCALE = 32768
+ // This leaves you with A2 = -18174 , A3 = 6523, B1 = 1183 , B2 = 2367 , B3 = 1183
+ // B1 + B2 + B3 - A2 - A3 should sum to 2^COEFF_SCALE = 16384
  //
  // Sample frequency is "clk rate/div" 
  //
