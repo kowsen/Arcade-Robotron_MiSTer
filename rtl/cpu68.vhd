@@ -124,7 +124,7 @@ architecture CPU_ARCH of cpu68 is
 	pulx_lo_state, pulx_hi_state, pshx_lo_state, pshx_hi_state, 
 	vect_lo_state, vect_hi_state, 
 	stall1_state, stall2_state,
-	stall1_write_state, stall2_write_state, stall3_write_state,
+	stall1_write_state, stall2_write_state,
 	stall1_write16_state, stall2_write16_state,
 	stall1_idx_read_state,
 	stall1_jsr_state, stall2_jsr_state, stall3_jsr_state,
@@ -2343,7 +2343,7 @@ begin
 									alu_ctrl <= alu_st8;
 									cc_ctrl <= latch_cc;
 									md_ctrl <= load_md;
-									next_state <= stall3_write_state;
+									next_state <= stall2_write_state;
 								when "1101" => -- jsr
 									left_ctrl <= acca_left;
 									right_ctrl <= zero_right;
@@ -2368,13 +2368,13 @@ begin
 						end case;
 						when "1110" => -- accb indexed
 							case op_code(3 downto 0) is
-								when "0111" => -- stab indexed
+								when "0111" => -- stab direct
 									left_ctrl <= accb_left;
 									right_ctrl <= zero_right;
 									alu_ctrl <= alu_st8;
 									cc_ctrl <= latch_cc;
 									md_ctrl <= load_md;
-									next_state <= stall3_write_state;
+									next_state <= stall2_write_state;
 								when "1101" => -- std indexed
 									left_ctrl <= accd_left;
 									right_ctrl <= zero_right;
@@ -4029,25 +4029,6 @@ begin
 					addr_ctrl <= idle_ad;
 					dout_ctrl <= md_lo_dout;
 					next_state <= fetch_state;
-
-				when stall3_write_state => -- Do nothing for three cycles
-					acca_ctrl <= latch_acca;
-					accb_ctrl <= latch_accb;
-					ix_ctrl <= latch_ix;
-					sp_ctrl <= latch_sp;
-					pc_ctrl <= latch_pc;
-					md_ctrl <= latch_md;
-					iv_ctrl <= latch_iv;
-					op_ctrl <= latch_op;
-					nmi_ctrl <= latch_nmi;
-					ea_ctrl <= latch_ea;
-					left_ctrl <= acca_left;
-					right_ctrl <= zero_right;
-					alu_ctrl <= alu_nop;
-					cc_ctrl <= latch_cc;
-					addr_ctrl <= idle_ad;
-					dout_ctrl <= md_lo_dout;
-					next_state <= stall2_write_state;
 
 				when stall2_write_state => -- Do nothing for two cycles
 					-- default
