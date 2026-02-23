@@ -622,8 +622,7 @@ iir_2nd_order #(
     .COEFF_WIDTH(22),
     .COEFF_SCALE(15),
     .DATA_WIDTH(16),
-    .COUNT_BITS(12),
-    .INTERNAL_WIDTH(24)
+    .COUNT_BITS(12)
 ) speech_lpf_stage1 (
     .clk(clk_sys),
     .reset(reset),
@@ -642,8 +641,7 @@ iir_2nd_order #(
     .COEFF_WIDTH(22),
     .COEFF_SCALE(15),
     .DATA_WIDTH(16),
-    .COUNT_BITS(12),
-    .INTERNAL_WIDTH(24)
+    .COUNT_BITS(12)
 ) speech_lpf_stage2 (
     .clk(clk_sys),
     .reset(reset),
