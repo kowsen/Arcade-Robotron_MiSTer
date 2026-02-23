@@ -137,7 +137,7 @@ architecture CPU_ARCH of cpu68 is
 	type cc_type is (reset_cc, load_cc, pull_cc, latch_cc);
 	type ix_type is (reset_ix, load_ix, pull_lo_ix, pull_hi_ix, latch_ix);
 	type sp_type is (reset_sp, latch_sp, load_sp);
-	type pc_type is (reset_pc, latch_pc, load_ea_pc, add_ea_pc, pull_lo_pc, pull_hi_pc, inc_pc);
+	type pc_type is (reset_pc, latch_pc, load_ea_pc, add_ea_pc, pull_lo_pc, pull_hi_pc, inc_pc, load_ext_pc);
 	type md_type is (reset_md, latch_md, load_md, fetch_first_md, fetch_next_md, shiftl_md);
 	type ea_type is (reset_ea, latch_ea, add_ix_ea, load_accb_ea, inc_ea, fetch_first_ea, fetch_next_ea);
 	type iv_type is (reset_iv, latch_iv, swi_iv, nmi_iv, irq_iv);
@@ -296,6 +296,9 @@ begin
 				temppc := "1111111111111110";
 			when load_ea_pc => 
 				temppc := ea;
+			when load_ext_pc =>
+				temppc(15 downto 8) := ea(7 downto 0);
+				temppc(7 downto 0) := data_in;
 			when pull_lo_pc => 
 				temppc(7 downto 0) := data_in;
 				temppc(15 downto 8) := pc(15 downto 8);
@@ -2434,10 +2437,12 @@ begin
 								when "1011" => -- undefined
 									next_state <= fetch_state;
 								when "1110" => -- jmp
-									next_state <= jmp_state;
+									pc_ctrl <= load_ext_pc;
+									addr_ctrl <= idle_ad;
+									next_state <= fetch_state;
 								when others => 
 									next_state <= read8_state;
-						end case;
+							end case;
 						when "1011" => -- acca extended
 							case op_code(3 downto 0) is
 								when "0111" => -- staa
