@@ -607,90 +607,9 @@ arcade_video #(296,8) arcade_video
 
 ///////////////////////////////////////////////////////////////////
 
-// Dual 2nd-order IIR filter replicating the Sinistar sound board's cascaded
-// active low-pass filters. Each analog stage is a near-Butterworth 2nd-order
-// section (Q≈0.7). Uses iir_2nd_order_sat to avoid clipping from intermediate
-// overflow during the feedback computation.
-// Stage 1: f0=3473Hz, Q=0.694, gain=4.186x (applied separately as <<< 2)
-// Stage 2: f0=3330Hz, Q=0.699, gain=1.0x
-
-wire signed [15:0] s_in = speech - 16'h8000;
-wire signed [15:0] s1, s_out;
-
-// OP-AMP 1: 2nd-order LPF (f0=3473Hz, Q=0.694)
-iir_2nd_order #(
-    .COEFF_WIDTH(22),
-    .COEFF_SCALE(15),
-    .DATA_WIDTH(16),
-    .COUNT_BITS(12)
-) speech_lpf_stage1 (
-    .clk(clk_sys),
-    .reset(reset),
-    .div(12'd256), // ~46.875kHz sample rate
-    .A2(-22'sd44251),
-    .A3(22'sd16754),
-    .B1(22'sd1318),
-    .B2(22'sd2636),
-    .B3(22'sd1318),
-    .in(s_in),
-    .out(s1)
-);
-
-// OP-AMP 2: 2nd-order LPF (f0=3330Hz, Q=0.699)
-iir_2nd_order #(
-    .COEFF_WIDTH(22),
-    .COEFF_SCALE(15),
-    .DATA_WIDTH(16),
-    .COUNT_BITS(12)
-) speech_lpf_stage2 (
-    .clk(clk_sys),
-    .reset(reset),
-    .div(12'd256),
-    .A2(-22'sd45163),
-    .A3(22'sd17301),
-    .B1(22'sd1226),
-    .B2(22'sd2453),
-    .B3(22'sd1226),
-    .in(s1),
-    .out(s_out)
-);
-
-// GAIN & SATURATION (Replicating 4.18x Analog Boost)
-// Left-shifting by 2 bits provides a clean 4.0x gain.
-wire signed [17:0] s_boosted = $signed(s_out) <<< 2;
-reg  signed [15:0] s_final;
-
-always @(*) begin
-    if (s_boosted > 32767)
-        s_final = 16'sh7FFF; // Saturate at positive limit
-    else if (s_boosted < -32768)
-        s_final = 16'sh8000; // Saturate at negative limit
-    else
-        s_final = s_boosted[15:0];
-end
-
-wire [15:0] filtered_speech_unsigned = s_final + 16'h8000;
-
 logic [16:0] audsum;
-assign audsum = {audio, 8'd0} + (mod == mod_sinistar ? filtered_speech_unsigned : speech);
-
-// --- GLOBAL AUDIO LOW-PASS FILTER ---
-// Applied to the final mix (main CPU audio + Speech board audio)
-// Smooths out the 44-cycle Williams bug and tames the bright Sinistar speech.
-localparam LPF_SHIFT = 9;
-reg [16+LPF_SHIFT:0] audio_lpf; // 17-bit signal + 9-bit shift = 26 bits
-
-always @(posedge clk_sys) begin
-    if (reset)
-        audio_lpf <= 0;
-    else
-        audio_lpf <= audio_lpf + audsum - audio_lpf[16+LPF_SHIFT : LPF_SHIFT];
-end
-
-wire [16:0] filtered_audio = audio_lpf[16+LPF_SHIFT : LPF_SHIFT];
-// ------------------------------------
-
-assign AUDIO_L = {1'b0, filtered_audio[16:3]};
+assign audsum = {audio, 8'd0} + speech;
+assign AUDIO_L = {1'b0, audsum[16:3]};
 assign AUDIO_R = AUDIO_L;
 assign AUDIO_S = 0;
 
