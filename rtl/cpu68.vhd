@@ -2438,7 +2438,6 @@ begin
 									next_state <= fetch_state;
 								when "1110" => -- jmp
 									pc_ctrl <= load_ext_pc;
-									addr_ctrl <= idle_ad;
 									next_state <= fetch_state;
 								when others => 
 									next_state <= read8_state;
