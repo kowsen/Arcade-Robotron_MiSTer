@@ -85,20 +85,7 @@ architecture struct of williams_sound_board is
  signal pia_pb_i   : std_logic_vector( 7 downto 0);
  signal pia_cb1_i  : std_logic;
 
- signal boot_cnt   : integer range 0 to 1000000 := 0;
-
 begin
-
-process(clock, reset)
-begin
-	if reset = '1' then
-		boot_cnt <= 0;
-	elsif rising_edge(clock) then
-		if boot_cnt < 1000000 then
-			boot_cnt <= boot_cnt + 1;
-		end if;
-	end if;
-end process;
 
 clk089 : work.CEGen
 port map
@@ -136,9 +123,7 @@ pia_pb_i(7) <= hand; -- Handshake from rom board rom_pia_pa_out(7)
 
 
 -- pia Cb1
-pia_cb1_i <= '0' when boot_cnt < 1000000 else
-             '0' when (select_sound = "111111" and hand = '1') else 
-             '1';
+pia_cb1_i <= '0' when select_sound = "111111" and hand = '1' else '1';
 
 -- pia irqs to cpu
 cpu_irq  <= pia_irqa or pia_irqb;
