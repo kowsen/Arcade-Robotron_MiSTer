@@ -772,8 +772,8 @@ begin
                      not R_COIN &
                      not ADVANCE &
                      not AUTO_UP;
-    PB(5 downto 0) <= (rom_pia_pb_out(5 downto 0) or (not rom_pia_pb_dir(5 downto 0)));
-    HAND <= (rom_pia_pa_out(7) or (not rom_pia_pa_dir(7)));
+    PB(5 downto 0) <= rom_pia_pb_out(5 downto 0);
+    HAND <= rom_pia_pa_out(7);
 
     --rom_led_digit(0) <= rom_pia_pb_out(6);
     --rom_led_digit(1) <= rom_pia_pb_out(7);
