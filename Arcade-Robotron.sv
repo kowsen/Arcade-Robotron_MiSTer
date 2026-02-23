@@ -657,19 +657,19 @@ iir_2nd_order #(
 
 // GAIN & SATURATION (Replicating 4.18x Analog Boost)
 // Left-shifting by 2 bits provides a clean 4.0x gain.
-// wire signed [17:0] s_boosted = $signed(s_out) <<< 2;
-// reg  signed [15:0] s_final;
+wire signed [17:0] s_boosted = $signed(s_out) <<< 2;
+reg  signed [15:0] s_final;
 
-// always @(*) begin
-//     if (s_boosted > 32767)
-//         s_final = 16'sh7FFF; // Saturate at positive limit
-//     else if (s_boosted < -32768)
-//         s_final = 16'sh8000; // Saturate at negative limit
-//     else
-//         s_final = s_boosted[15:0];
-// end
+always @(*) begin
+    if (s_boosted > 32767)
+        s_final = 16'sh7FFF; // Saturate at positive limit
+    else if (s_boosted < -32768)
+        s_final = 16'sh8000; // Saturate at negative limit
+    else
+        s_final = s_boosted[15:0];
+end
 
-wire [15:0] filtered_speech_unsigned = s_out + 16'h8000;
+wire [15:0] filtered_speech_unsigned = s_final + 16'h8000;
 
 logic [16:0] audsum;
 assign audsum = {audio, 8'd0} + (mod == mod_sinistar ? filtered_speech_unsigned : speech);

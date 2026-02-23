@@ -710,7 +710,7 @@ begin
 				out_alu <= not left;
 			when alu_clr | alu_ld8 | alu_ld16 => 
 				out_alu <= right; -- clr, ld
-			when alu_st8 | alu_st16 | alu_tst => 
+			when alu_st8 | alu_st16 => 
 				out_alu <= left;
 			when alu_daa => 
 				out_alu <= left + ("00000000" & daa_reg);
@@ -759,7 +759,7 @@ begin
 				end if;
 			when alu_sec => 
 				cc_out(CBIT) <= '1';
-			when alu_clc | alu_tst => 
+			when alu_clc => 
 				cc_out(CBIT) <= '0';
 			when alu_tap => 
 				cc_out(CBIT) <= left(CBIT);
@@ -776,7 +776,7 @@ begin
 				alu_inc | alu_dec | 
 				alu_neg | alu_com | alu_clr | 
 				alu_rol8 | alu_ror8 | alu_asr8 | alu_asl8 | alu_lsr8 | 
-				alu_ld8 | alu_st8 | alu_tst => 
+				alu_ld8 | alu_st8 => 
 				cc_out(ZBIT) <= not(out_alu(7) or out_alu(6) or out_alu(5) or out_alu(4) or
 					out_alu(3) or out_alu(2) or out_alu(1) or out_alu(0));
 			when alu_add16 | alu_sub16 | 
@@ -802,7 +802,7 @@ begin
 				alu_and | alu_ora | alu_eor | 
 				alu_rol8 | alu_ror8 | alu_asr8 | alu_asl8 | alu_lsr8 | 
 				alu_inc | alu_dec | alu_neg | alu_com | alu_clr | 
-				alu_ld8 | alu_st8 | alu_tst => 
+				alu_ld8 | alu_st8 => 
 				cc_out(NBIT) <= out_alu(7);
 			when alu_add16 | alu_sub16 | 
 				alu_lsl16 | alu_lsr16 | 
@@ -877,7 +877,7 @@ begin
 			when alu_tap => 
 				cc_out(VBIT) <= left(VBIT);
 			when alu_and | alu_ora | alu_eor | alu_com | 
-				alu_st8 | alu_st16 | alu_ld8 | alu_ld16 | alu_tst | 
+				alu_st8 | alu_st16 | alu_ld8 | alu_ld16 | 
 				alu_clv => 
 				cc_out(VBIT) <= '0';
 			when alu_sev => 
@@ -1938,7 +1938,7 @@ begin
 									cc_ctrl <= load_cc;
 								when "1101" => -- tst
 									right_ctrl <= zero_right;
-									alu_ctrl <= alu_tst;
+									alu_ctrl <= alu_st8;
 									acca_ctrl <= latch_acca;
 									cc_ctrl <= load_cc;
 								when "1110" => -- jmp
@@ -2022,7 +2022,7 @@ begin
 									cc_ctrl <= load_cc;
 								when "1101" => -- tst
 									right_ctrl <= zero_right;
-									alu_ctrl <= alu_tst;
+									alu_ctrl <= alu_st8;
 									accb_ctrl <= latch_accb;
 									cc_ctrl <= load_cc;
 								when "1110" => -- jmp
@@ -3290,7 +3290,7 @@ begin
 									end if;
 								when "1101" => -- tst
 									right_ctrl <= zero_right;
-									alu_ctrl <= alu_tst;
+									alu_ctrl <= alu_st8;
 									cc_ctrl <= load_cc;
 									md_ctrl <= latch_md;
 									next_state <= fetch_state;
