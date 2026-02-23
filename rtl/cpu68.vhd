@@ -3197,7 +3197,7 @@ begin
 									alu_ctrl <= alu_neg;
 									cc_ctrl <= load_cc;
 									md_ctrl <= load_md;
-									if op_code(5) = '1' then
+									if op_code(4) = '0' then
 										next_state <= stall1_write_state;
 									else
 										next_state <= write8_state;
@@ -3207,7 +3207,7 @@ begin
 									alu_ctrl <= alu_com;
 									cc_ctrl <= load_cc;
 									md_ctrl <= load_md;
-									if op_code(5) = '1' then
+									if op_code(4) = '0' then
 										next_state <= stall1_write_state;
 									else
 										next_state <= write8_state;
@@ -3217,7 +3217,7 @@ begin
 									alu_ctrl <= alu_lsr8;
 									cc_ctrl <= load_cc;
 									md_ctrl <= load_md;
-									if op_code(5) = '1' then
+									if op_code(4) = '0' then
 										next_state <= stall1_write_state;
 									else
 										next_state <= write8_state;
@@ -3227,7 +3227,7 @@ begin
 									alu_ctrl <= alu_ror8;
 									cc_ctrl <= load_cc;
 									md_ctrl <= load_md;
-									if op_code(5) = '1' then
+									if op_code(4) = '0' then
 										next_state <= stall1_write_state;
 									else
 										next_state <= write8_state;
@@ -3237,7 +3237,7 @@ begin
 									alu_ctrl <= alu_asr8;
 									cc_ctrl <= load_cc;
 									md_ctrl <= load_md;
-									if op_code(5) = '1' then
+									if op_code(4) = '0' then
 										next_state <= stall1_write_state;
 									else
 										next_state <= write8_state;
@@ -3247,7 +3247,7 @@ begin
 									alu_ctrl <= alu_asl8;
 									cc_ctrl <= load_cc;
 									md_ctrl <= load_md;
-									if op_code(5) = '1' then
+									if op_code(4) = '0' then
 										next_state <= stall1_write_state;
 									else
 										next_state <= write8_state;
@@ -3257,7 +3257,7 @@ begin
 									alu_ctrl <= alu_rol8;
 									cc_ctrl <= load_cc;
 									md_ctrl <= load_md;
-									if op_code(5) = '1' then
+									if op_code(4) = '0' then
 										next_state <= stall1_write_state;
 									else
 										next_state <= write8_state;
@@ -3267,7 +3267,7 @@ begin
 									alu_ctrl <= alu_dec;
 									cc_ctrl <= load_cc;
 									md_ctrl <= load_md;
-									if op_code(5) = '1' then
+									if op_code(4) = '0' then
 										next_state <= stall1_write_state;
 									else
 										next_state <= write8_state;
@@ -3283,7 +3283,7 @@ begin
 									alu_ctrl <= alu_inc;
 									cc_ctrl <= load_cc;
 									md_ctrl <= load_md;
-									if op_code(5) = '1' then
+									if op_code(4) = '0' then
 										next_state <= stall1_write_state;
 									else
 										next_state <= write8_state;
@@ -3305,7 +3305,7 @@ begin
 									alu_ctrl <= alu_clr;
 									cc_ctrl <= load_cc;
 									md_ctrl <= load_md;
-									if op_code(5) = '1' then
+									if op_code(4) = '0' then
 										next_state <= stall1_write_state;
 									else
 										next_state <= write8_state;
