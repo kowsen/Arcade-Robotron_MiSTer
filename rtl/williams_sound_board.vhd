@@ -85,7 +85,36 @@ architecture struct of williams_sound_board is
  signal pia_pb_i   : std_logic_vector( 7 downto 0);
  signal pia_cb1_i  : std_logic;
 
+ -- Boot glitch generator signals
+ constant BOOT_DELAY : integer := 65536; -- Approx 5.5ms at 12MHz
+ constant BOOT_PULSE : integer := 256;   -- Short pulse width
+ 
+ -- Restricting the integer range saves logic elements and prevents synthesis warnings
+ signal boot_cnt     : integer range 0 to BOOT_DELAY + BOOT_PULSE + 1 := 0;
+ signal boot_trig    : std_logic := '0';
+
 begin
+
+-- Boot glitch generator to simulate real hardware power-on transient
+process(clock, reset)
+begin
+	if reset = '1' then
+		boot_cnt <= 0;
+		boot_trig <= '0';
+	elsif rising_edge(clock) then
+		-- Stop counting once the pulse window has passed
+		if boot_cnt <= BOOT_DELAY + BOOT_PULSE then
+			boot_cnt <= boot_cnt + 1;
+		end if;
+		
+		-- Assert trigger only during the specific pulse window
+		if boot_cnt >= BOOT_DELAY and boot_cnt < (BOOT_DELAY + BOOT_PULSE) then
+			boot_trig <= '1';
+		else
+			boot_trig <= '0';
+		end if;
+	end if;
+end process;
 
 clk089 : work.CEGen
 port map
@@ -122,8 +151,10 @@ pia_pb_i(6) <= '1';
 pia_pb_i(7) <= hand; -- Handshake from rom board rom_pia_pa_out(7)
 
 
--- pia Cb1
-pia_cb1_i <= '0' when select_sound = "111111" and hand = '1' else '1';
+-- pia Cb1 (modified to include synthetic boot glitch)
+pia_cb1_i <= '1' when boot_trig = '1' else 
+             '0' when (select_sound = "111111" and hand = '1') else 
+             '1';
 
 -- pia irqs to cpu
 cpu_irq  <= pia_irqa or pia_irqb;
