@@ -655,42 +655,21 @@ iir_2nd_order #(
     .out(s_out)
 );
 
-// GAIN & SATURATION (Replicating 4.18x Analog Boost)
-// Left-shifting by 2 bits provides a clean 4.0x gain.
-wire signed [17:0] s_boosted = $signed(s_out) <<< 2;
-reg  signed [15:0] s_final;
-
-always @(*) begin
-    if (s_boosted > 32767)
-        s_final = 16'sh7FFF; // Saturate at positive limit
-    else if (s_boosted < -32768)
-        s_final = 16'sh8000; // Saturate at negative limit
-    else
-        s_final = s_boosted[15:0];
-end
-
-wire [15:0] filtered_speech_unsigned = s_final + 16'h8000;
+// --- GAIN & SATURATION FIX ---
+// Pass the filtered speech cleanly without any 4x boost or hard clipping.
+// This allows the massive bass sine waves to breathe without being sheared flat.
+wire [15:0] filtered_speech_unsigned = s_out + 16'h8000;
 
 logic [16:0] audsum;
-assign audsum = {audio, 8'd0} + (mod == mod_sinistar ? filtered_speech_unsigned : speech);
+// To replicate the physical 4.18x OP-AMP boost of the speech board, 
+// we reduce the volume of the 8-bit game SFX by padding it with 6 zeros instead of 8. 
+// This makes the game SFX 1/4th the volume of the speech, perfectly preserving 
+// the analog mixing ratio without digitally clipping the speech path.
+assign audsum = {3'b000, audio, 6'd0} + (mod == mod_sinistar ? filtered_speech_unsigned : speech);
 
-// --- GLOBAL AUDIO LOW-PASS FILTER ---
-// Applied to the final mix (main CPU audio + Speech board audio)
-// Smooths out the 44-cycle Williams bug and tames the bright Sinistar speech.
-localparam LPF_SHIFT = 9;
-reg [16+LPF_SHIFT:0] audio_lpf; // 17-bit signal + 9-bit shift = 26 bits
-
-always @(posedge clk_sys) begin
-    if (reset)
-        audio_lpf <= 0;
-    else
-        audio_lpf <= audio_lpf + audsum - audio_lpf[16+LPF_SHIFT : LPF_SHIFT];
-end
-
-wire [16:0] filtered_audio = audio_lpf[16+LPF_SHIFT : LPF_SHIFT];
 // ------------------------------------
 
-assign AUDIO_L = {1'b0, filtered_audio[16:3]};
+assign AUDIO_L = audsum[16:1];
 assign AUDIO_R = AUDIO_L;
 assign AUDIO_S = 0;
 
