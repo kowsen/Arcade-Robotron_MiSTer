@@ -675,29 +675,19 @@ logic [16:0] audsum;
 assign audsum = {audio, 8'd0} + (mod == mod_sinistar ? filtered_speech_unsigned : speech);
 
 // --- GLOBAL AUDIO LOW-PASS FILTER ---
-// Tunable EMA filter to emulate the RC circuit + paper speaker + wooden cabinet
-// Runs at 12 MHz to swallow the 44-cycle CPU jitter without aliasing.
-// Formula: Cutoff_Hz = (12MHz * LPF_NUM / 1024) / (2 * PI)
-
-// TUNE THIS VALUE to find the artistic sweet spot!
-// 1 = ~1,865 Hz (Very muffled, heavy bass)
-// 2 = ~3,730 Hz (Warm, classic arcade sound)
-// 3 = ~5,595 Hz (Balanced)
-// 4 = ~7,460 Hz (Brighter - simulates heavy 8" paper speaker)
-// 5 = ~9,325 Hz (Crisp/Sharp - simulates lighter/smaller speaker)
-localparam LPF_NUM = 4; 
-
-localparam LPF_SHIFT = 10; 
-reg [27:0] audio_lpf; // 28 bits to safely hold 17-bit audsum shifted by 10
+// Applied to the final mix (main CPU audio + Speech board audio)
+// Smooths out the 44-cycle Williams bug and tames the bright Sinistar speech.
+localparam LPF_SHIFT = 9;
+reg [16+LPF_SHIFT:0] audio_lpf; // 17-bit signal + 9-bit shift = 26 bits
 
 always @(posedge clk_sys) begin
     if (reset)
         audio_lpf <= 0;
     else
-        audio_lpf <= audio_lpf + (audsum * LPF_NUM) - (audio_lpf[26:10] * LPF_NUM);
+        audio_lpf <= audio_lpf + audsum - audio_lpf[16+LPF_SHIFT : LPF_SHIFT];
 end
 
-wire [16:0] filtered_audio = audio_lpf[26:10];
+wire [16:0] filtered_audio = audio_lpf[16+LPF_SHIFT : LPF_SHIFT];
 // ------------------------------------
 
 assign AUDIO_L = {1'b0, filtered_audio[16:3]};
