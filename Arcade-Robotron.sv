@@ -611,13 +611,13 @@ arcade_video #(296,8) arcade_video
 // active low-pass filters. Each analog stage is a near-Butterworth 2nd-order
 // section (Q≈0.7). Uses iir_2nd_order_sat to avoid clipping from intermediate
 // overflow during the feedback computation.
-// Stage 1: Real f0=3473Hz (Tuned to 2431Hz), Q=0.694, gain=4.186x (applied separately as <<< 2)
-// Stage 2: Real f0=3330Hz (Tuned to 2331Hz), Q=0.699, gain=1.0x
+// Stage 1: f0=3473Hz, Q=0.694, gain=4.186x (applied separately as <<< 2)
+// Stage 2: f0=3330Hz, Q=0.699, gain=1.0x
 
 wire signed [15:0] s_in = speech - 16'h8000;
 wire signed [15:0] s1, s_out;
 
-// OP-AMP 1: 2nd-order LPF (Real f0=3473Hz, Tuned to 2431Hz to tame brightness, Q=0.694)
+// OP-AMP 1: 2nd-order LPF (f0=3473Hz, Q=0.694)
 iir_2nd_order #(
     .COEFF_WIDTH(22),
     .COEFF_SCALE(15),
@@ -627,16 +627,16 @@ iir_2nd_order #(
     .clk(clk_sys),
     .reset(reset),
     .div(12'd256), // ~46.875kHz sample rate
-    .A2(-22'sd50452),
-    .A3(22'sd20486),
-    .B1(22'sd701),
-    .B2(22'sd1401),
-    .B3(22'sd701),
+    .A2(-22'sd44251),
+    .A3(22'sd16754),
+    .B1(22'sd1318),
+    .B2(22'sd2636),
+    .B3(22'sd1318),
     .in(s_in),
     .out(s1)
 );
 
-// OP-AMP 2: 2nd-order LPF (Real f0=3330Hz, Tuned to 2331Hz to tame brightness, Q=0.699)
+// OP-AMP 2: 2nd-order LPF (f0=3330Hz, Q=0.699)
 iir_2nd_order #(
     .COEFF_WIDTH(22),
     .COEFF_SCALE(15),
@@ -646,11 +646,11 @@ iir_2nd_order #(
     .clk(clk_sys),
     .reset(reset),
     .div(12'd256),
-    .A2(-22'sd51122),
-    .A3(22'sd20955),
-    .B1(22'sd650),
-    .B2(22'sd1301),
-    .B3(22'sd650),
+    .A2(-22'sd45163),
+    .A3(22'sd17301),
+    .B1(22'sd1226),
+    .B2(22'sd2453),
+    .B3(22'sd1226),
     .in(s1),
     .out(s_out)
 );
