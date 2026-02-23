@@ -673,7 +673,24 @@ wire [15:0] filtered_speech_unsigned = s_final + 16'h8000;
 
 logic [16:0] audsum;
 assign audsum = {audio, 8'd0} + (mod == mod_sinistar ? filtered_speech_unsigned : speech);
-assign AUDIO_L = {1'b0, audsum[16:3]};
+
+// --- GLOBAL AUDIO LOW-PASS FILTER ---
+// Applied to the final mix (main CPU audio + Speech board audio)
+// Smooths out the 44-cycle Williams bug and tames the bright Sinistar speech.
+localparam LPF_SHIFT = 9;
+reg [16+LPF_SHIFT:0] audio_lpf; // 17-bit signal + 9-bit shift = 26 bits
+
+always @(posedge clk_sys) begin
+    if (reset)
+        audio_lpf <= 0;
+    else
+        audio_lpf <= audio_lpf + audsum - audio_lpf[16+LPF_SHIFT : LPF_SHIFT];
+end
+
+wire [16:0] filtered_audio = audio_lpf[16+LPF_SHIFT : LPF_SHIFT];
+// ------------------------------------
+
+assign AUDIO_L = {1'b0, filtered_audio[16:3]};
 assign AUDIO_R = AUDIO_L;
 assign AUDIO_S = 0;
 
