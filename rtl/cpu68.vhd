@@ -3293,7 +3293,11 @@ begin
 									alu_ctrl <= alu_st8;
 									cc_ctrl <= load_cc;
 									md_ctrl <= latch_md;
-									next_state <= fetch_state;
+									if op_code(4) = '0' then
+										next_state <= stall2_state;
+									else
+										next_state <= stall1_state;
+									end if;
 								when "1110" => -- jmp
 									right_ctrl <= zero_right;
 									alu_ctrl <= alu_nop;
