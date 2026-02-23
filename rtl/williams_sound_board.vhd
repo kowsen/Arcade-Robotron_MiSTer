@@ -84,30 +84,8 @@ architecture struct of williams_sound_board is
  signal pia_pa_o   : std_logic_vector( 7 downto 0);
  signal pia_pb_i   : std_logic_vector( 7 downto 0);
  signal pia_cb1_i  : std_logic;
- signal boot_cnt   : std_logic_vector(17 downto 0) := (others => '0');
- signal boot_trig  : std_logic := '0';
 
 begin
-
--- Boot glitch generator to simulate real hardware power-on sound
-process(clock, reset)
-begin
-	if reset = '1' then
-		boot_cnt <= (others => '0');
-		boot_trig <= '0';
-	elsif rising_edge(clock) then
-		if boot_cnt(17) = '0' then
-			boot_cnt <= boot_cnt + 1;
-		end if;
-		
-		-- Pulse boot_trig high for a short time after ~10ms
-		if boot_cnt = "010000000000000000" then
-			boot_trig <= '1';
-		elsif boot_cnt = "010000000011111111" then
-			boot_trig <= '0';
-		end if;
-	end if;
-end process;
 
 clk089 : work.CEGen
 port map
@@ -145,7 +123,7 @@ pia_pb_i(7) <= hand; -- Handshake from rom board rom_pia_pa_out(7)
 
 
 -- pia Cb1
-pia_cb1_i <= '0' when (select_sound = "111111" and hand = '1') or (boot_trig = '1') else '1';
+pia_cb1_i <= '0' when select_sound = "111111" and hand = '1' else '1';
 
 -- pia irqs to cpu
 cpu_irq  <= pia_irqa or pia_irqb;
