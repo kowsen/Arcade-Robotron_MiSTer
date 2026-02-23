@@ -146,7 +146,7 @@ port map (
 	ADDR             => cpu_a,
 	Dout             => cpu_dout,
 	D                => cpu_din,
-	nReset           => cpu_reset_n,
+	nReset           => cpu_delayed_reset_n,
 	nNMI             => cpu_nmi_n,
 	nFIRQ            => cpu_firq_n,
 	nIRQ             => cpu_irq_n,
@@ -161,14 +161,19 @@ port map (
 	Q                => cpu_q
 );
 
-process (clock) 
+process(clock)
 begin
-	if rising_edge(clock) then 
-		if cpu_rwn = '0' and cpu_a = x"9C92" then
-			if cpu_dout = X"FD" then
-				sg_state <= '1';
+	if rising_edge(clock) then
+		if cpu_reset_n = '0' then
+			delay_counter <= (others => '0');
+			cpu_delayed_reset_n <= '0';
+		else
+			-- Hold the main CPU in reset for ~87ms to let the sound board boot
+			if delay_counter(19) = '1' then
+				cpu_delayed_reset_n <= '1';
 			else
-				sg_state <= '0';
+				delay_counter <= delay_counter + 1;
+				cpu_delayed_reset_n <= '0';
 			end if;
 		end if;
 	end if;
