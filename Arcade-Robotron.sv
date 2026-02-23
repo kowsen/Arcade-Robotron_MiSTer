@@ -607,15 +607,18 @@ arcade_video #(296,8) arcade_video
 
 ///////////////////////////////////////////////////////////////////
 
-// filter cascade replicating dual op-amp low pass filter
-// Frequency: ~3400Hz total cutoff
-// Gain: ~4.0x
+// Dual 2nd-order IIR filter replicating the Sinistar sound board's cascaded
+// active low-pass filters. Each analog stage is a near-Butterworth 2nd-order
+// section (Q≈0.7). Uses iir_2nd_order_sat to avoid clipping from intermediate
+// overflow during the feedback computation.
+// Stage 1: f0=3473Hz, Q=0.694, gain=4.186x (applied separately as <<< 2)
+// Stage 2: f0=3330Hz, Q=0.699, gain=1.0x
 
 wire signed [15:0] s_in = speech - 16'h8000;
-wire signed [15:0] s1, s2, s3, s_out;
+wire signed [15:0] s1, s_out;
 
-// STAGE 1
-iir_1st_order #(
+// OP-AMP 1: 2nd-order LPF (f0=3473Hz, Q=0.694)
+iir_2nd_order #(
     .COEFF_WIDTH(22),
     .COEFF_SCALE(15),
     .DATA_WIDTH(16),
@@ -624,15 +627,17 @@ iir_1st_order #(
     .clk(clk_sys),
     .reset(reset),
     .div(12'd256), // ~46.875kHz sample rate
-    .A2(-22'sd20502),
-    .B1(22'sd6133),
-    .B2(22'sd6133),
+    .A2(-22'sd44251),
+    .A3(22'sd16754),
+    .B1(22'sd1318),
+    .B2(22'sd2636),
+    .B3(22'sd1318),
     .in(s_in),
     .out(s1)
 );
 
-// STAGE 2
-iir_1st_order #(
+// OP-AMP 2: 2nd-order LPF (f0=3330Hz, Q=0.699)
+iir_2nd_order #(
     .COEFF_WIDTH(22),
     .COEFF_SCALE(15),
     .DATA_WIDTH(16),
@@ -641,44 +646,12 @@ iir_1st_order #(
     .clk(clk_sys),
     .reset(reset),
     .div(12'd256),
-    .A2(-22'sd20502),
-    .B1(22'sd6133),
-    .B2(22'sd6133),
+    .A2(-22'sd45163),
+    .A3(22'sd17301),
+    .B1(22'sd1226),
+    .B2(22'sd2453),
+    .B3(22'sd1226),
     .in(s1),
-    .out(s2)
-);
-
-// STAGE 3
-iir_1st_order #(
-    .COEFF_WIDTH(22),
-    .COEFF_SCALE(15),
-    .DATA_WIDTH(16),
-    .COUNT_BITS(12)
-) speech_lpf_stage3 (
-    .clk(clk_sys),
-    .reset(reset),
-    .div(12'd256),
-    .A2(-22'sd20502),
-    .B1(22'sd6133),
-    .B2(22'sd6133),
-    .in(s2),
-    .out(s3)
-);
-
-// STAGE 4
-iir_1st_order #(
-    .COEFF_WIDTH(22),
-    .COEFF_SCALE(15),
-    .DATA_WIDTH(16),
-    .COUNT_BITS(12)
-) speech_lpf_stage4 (
-    .clk(clk_sys),
-    .reset(reset),
-    .div(12'd256),
-    .A2(-22'sd20502),
-    .B1(22'sd6133),
-    .B2(22'sd6133),
-    .in(s3),
     .out(s_out)
 );
 

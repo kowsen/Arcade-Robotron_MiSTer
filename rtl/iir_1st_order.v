@@ -149,7 +149,18 @@ module iir_2nd_order
 	always @ (*) begin
 		out32 <= (B1*x0 + B2*x1 + B3*x2) - (A2*y0 + A3*y1); //Previous output is y0 not y1
 	end
-	
+
+	// Saturating extraction: check if guard bits (between sign and data field)
+	// are consistent with the sign bit. If not, clamp to ±max to prevent
+	// wrap-around artifacts when |A2/SCALE| > 1 (normal for 2nd-order filters).
+	wire out_sign = out32[DATA_WIDTH + COEFF_WIDTH - 1];
+	wire [COEFF_WIDTH - COEFF_SCALE - 1 : 0] guard_bits = out32[DATA_WIDTH + COEFF_WIDTH - 2 : DATA_WIDTH + COEFF_SCALE - 1];
+	wire overflow = out_sign ? ~(&guard_bits) : (|guard_bits);
+	wire signed [DATA_WIDTH-1:0] out_clamped = overflow ?
+		(out_sign ? {1'b1, {(DATA_WIDTH-1){1'b0}}} :
+		            {1'b0, {(DATA_WIDTH-1){1'b1}}}) :
+		out32[DATA_WIDTH + COEFF_SCALE - 1 : COEFF_SCALE];
+
 	always @ (posedge clk) begin
 		if(reset) begin
 			count <=  0;
@@ -164,7 +175,7 @@ module iir_2nd_order
 			if (count == div - 1) begin
 					count <= 0;
 					y1 <= y0;
-					y0 <= {out32[DATA_WIDTH + COEFF_WIDTH - 1] , out32[(DATA_WIDTH + COEFF_SCALE - 2) : COEFF_SCALE]};
+					y0 <= out_clamped;
 					x2 <= x1;
 					x1 <= x0;
 					x0 <= in;
