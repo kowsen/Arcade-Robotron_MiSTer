@@ -134,6 +134,12 @@ signal  spch_do      : std_logic_vector( 7 downto 0);
 signal  snd_rom_we   : std_logic;
 signal  spch_rom_we  : std_logic;
 
+-- Artificial delay for CPU startup to let sound board boot first.
+-- This didn't happen for all Robotron machines, but it did on the
+-- ones I remember
+signal  delay_cnt    : std_logic_vector(19 downto 0);
+signal  cpu_reset_n  : std_logic;
+
 begin
 
 mc6809: mc6809is
@@ -160,11 +166,26 @@ port map (
 process (clock) 
 begin
 	if rising_edge(clock) then 
+		-- Existing Stargate state logic
 		if cpu_rwn = '0' and cpu_a = x"9C92" then
 			if cpu_dout = X"FD" then
 				sg_state <= '1';
 			else
 				sg_state <= '0';
+			end if;
+		end if;
+
+		-- Delayed reset logic for the Main CPU
+		if cpu_reset_n = '0' then
+			delay_cnt <= (others => '0');
+			cpu_reset_n <= '0';
+		else
+			-- Hold the main CPU in reset for ~87ms to let the sound board boot
+			if delay_cnt(19) = '1' then
+				cpu_reset_n <= '1';
+			else
+				delay_cnt <= delay_cnt + 1;
+				cpu_reset_n <= '0';
 			end if;
 		end if;
 	end if;
