@@ -231,7 +231,7 @@ architecture hdl of hc55564 is
   constant SYLMASK   : unsigned(11 downto 0) := x"FC0";
   constant SYLSHIFT  : integer := 6;
   constant SYLADD    : unsigned(11 downto 0) := x"FC1";  -- effectively -63 in 12-bit
-  constant INTSHIFT  : integer := 4;
+  constant INTSHIFT  : integer := 5;
 
   -- Internal state
   signal shiftreg    : std_logic_vector(2 downto 0) := "000";

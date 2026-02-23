@@ -135,8 +135,9 @@ signal  snd_rom_we   : std_logic;
 signal  spch_rom_we  : std_logic;
 
 -- Artificial delay for CPU startup to match most original hardware
-signal  delay_counter       : std_logic_vector(19 downto 0);
-signal  cpu_delayed_reset_n : std_logic;
+signal  select_sound_raw : std_logic_vector( 5 downto 0);
+signal  glitch_timer     : unsigned(19 downto 0) := (others => '0');
+signal  apply_glitch     : std_logic := '0';
 
 begin
 
@@ -146,7 +147,7 @@ port map (
 	ADDR             => cpu_a,
 	Dout             => cpu_dout,
 	D                => cpu_din,
-	nReset           => cpu_delayed_reset_n,
+	nReset           => cpu_reset_n,
 	nNMI             => cpu_nmi_n,
 	nFIRQ            => cpu_firq_n,
 	nIRQ             => cpu_irq_n,
@@ -161,23 +162,38 @@ port map (
 	Q                => cpu_q
 );
 
-process(clock)
+process (clock) 
 begin
-	if rising_edge(clock) then
-		if cpu_reset_n = '0' then
-			delay_counter <= (others => '0');
-			cpu_delayed_reset_n <= '0';
-		else
-			-- Hold the main CPU in reset for ~87ms to let the sound board boot
-			if delay_counter(19) = '1' then
-				cpu_delayed_reset_n <= '1';
+	if rising_edge(clock) then 
+		if cpu_rwn = '0' and cpu_a = x"9C92" then
+			if cpu_dout = X"FD" then
+				sg_state <= '1';
 			else
-				delay_counter <= delay_counter + 1;
-				cpu_delayed_reset_n <= '0';
+				sg_state <= '0';
+			end if;
+		end if;
+
+		-- Synthesize the analog power-up hardware glitch
+		if cpu_reset_n = '0' then
+			glitch_timer <= (others => '0');
+			apply_glitch <= '0';
+		else
+			if glitch_timer < 1200000 then -- 100ms total window
+				glitch_timer <= glitch_timer + 1;
+				if glitch_timer > 960000 then -- Wait 80ms, then drop lines for 20ms
+					apply_glitch <= '1';
+				else
+					apply_glitch <= '0';
+				end if;
+			else
+				apply_glitch <= '0';
 			end if;
 		end if;
 	end if;
 end process;
+
+-- Apply the glitch to the bus
+select_sound <= "000000" when apply_glitch = '1' else select_sound_raw;
 
 cpu_board: entity work.williams_cpu
 port map (
@@ -241,8 +257,8 @@ port map (
 	JA               => JA,
 	JB               => JB,
 	
-	-- Sound board
-	PB               => select_sound,
+-- Sound board
+	PB               => select_sound_raw,
 	HAND             => hand,
 
 	dl_clock         => dl_clock,
