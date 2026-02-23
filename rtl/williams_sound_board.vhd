@@ -99,12 +99,12 @@ port map
 
 -- pia cs
 wram_cs <= '1' when cpu_addr(15 downto  8) = X"00" else '0';                        -- 0000-007F
-pia_cs  <= '1' when cpu_addr(14 downto 12) = "000" and cpu_addr(10) = '1' else '0'; -- 8400-8403 ? => 0400-0403
+pia_cs  <= '1' when cpu_addr(14 downto 12) = "000" and cpu_addr(10) = '1' and cpu_vma = '1' else '0'; -- 8400-8403 ? => 0400-0403
 spch_cs <= '1' when cpu_addr(15 downto 12) >= X"B" and cpu_addr(15 downto 12) <= X"E" else '0'; -- B000-EFFF
 rom_cs  <= '1' when cpu_addr(15 downto 12) = X"F" else '0';                         -- F000-FFFF
 
 -- write enables
-wram_we  <= '1' when cpu_rw = '0' and wram_cs = '1' else '0';
+wram_we <= '1' when cpu_rw = '0' and wram_cs = '1' and cpu_vma = '1' else '0';
 pia_rw_n <= '0' when cpu_rw = '0' and pia_cs = '1'  else '1'; 
 
 -- mux cpu in data between roms/io/wram
