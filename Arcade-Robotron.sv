@@ -607,6 +607,29 @@ arcade_video #(296,8) arcade_video
 
 ///////////////////////////////////////////////////////////////////
 
+wire signed [15:0] audio_signed = {audio, 8'd0} - 16'h8000;
+wire signed [15:0] audio_filtered_signed;
+
+// 1st-order 12kHz Low-Pass Filter
+iir_1st_order #(
+    .COEFF_WIDTH(18),
+    .COEFF_SCALE(15),
+    .DATA_WIDTH(16),
+    .COUNT_BITS(12)
+) audio_lpf (
+    .clk(clk_sys),
+    .reset(reset),
+    .div(12'd256),         // 46.875 kHz sample rate
+    .A2(18'sd613),         // A2
+    .B1(18'sd16691),       // B1
+    .B2(18'sd16690),       // B2
+    .in(audio_signed),
+    .out(audio_filtered_signed)
+);
+
+// 3. Convert back to unsigned for the mix
+wire [15:0] audio_filtered = audio_filtered_signed + 16'h8000;
+
 // Dual 2nd-order IIR filter replicating the Sinistar sound board's cascaded
 // active low-pass filters. Each analog stage is a near-Butterworth 2nd-order
 // section (Q≈0.7). Uses iir_2nd_order_sat to avoid clipping from intermediate
@@ -672,7 +695,7 @@ end
 wire [15:0] filtered_speech_unsigned = s_final + 16'h8000;
 
 logic [16:0] audsum;
-assign audsum = {audio, 8'd0} + (mod == mod_sinistar ? filtered_speech_unsigned : speech);
+assign audsum = {audio_filtered, 8'd0} + (mod == mod_sinistar ? filtered_speech_unsigned : speech);
 assign AUDIO_L = {1'b0, audsum[16:3]};
 assign AUDIO_R = AUDIO_L;
 assign AUDIO_S = 0;

@@ -112,6 +112,8 @@ signal  cpu_a        : std_logic_vector(15 downto 0);
 signal  cpu_dout     : std_logic_vector( 7 downto 0);
 signal  cpu_din      : std_logic_vector( 7 downto 0);
 signal  cpu_reset_n  : std_logic;
+signal  main_cpu_reset_n : std_logic := '0';
+signal  main_reset_cnt   : integer range 0 to 36000000 := 0;
 signal  cpu_nmi_n    : std_logic;
 signal  cpu_firq_n   : std_logic;
 signal  cpu_irq_n    : std_logic;
@@ -136,13 +138,33 @@ signal  spch_rom_we  : std_logic;
 
 begin
 
+-- Simulate the real hardware's power-good watchdog circuit.
+-- This holds the Main CPU in reset longer than the Sound Board,
+-- ensuring the Sound CPU is fully awake to catch the initial boot sound.
+process(clock)
+begin
+    if rising_edge(clock) then
+        if cpu_reset_n = '0' then
+            main_reset_cnt <= 0;
+            main_cpu_reset_n <= '0';
+        else
+            if main_reset_cnt < 36000000 then -- ~3 seconds delay at 12MHz
+                main_reset_cnt <= main_reset_cnt + 1;
+                main_cpu_reset_n <= '0';
+            else
+                main_cpu_reset_n <= '1';
+            end if;
+        end if;
+    end if;
+end process;
+
 mc6809: mc6809is
 port map (
 	clk              => not clock,
 	ADDR             => cpu_a,
 	Dout             => cpu_dout,
 	D                => cpu_din,
-	nReset           => cpu_reset_n,
+	nReset           => main_cpu_reset_n,
 	nNMI             => cpu_nmi_n,
 	nFIRQ            => cpu_firq_n,
 	nIRQ             => cpu_irq_n,
