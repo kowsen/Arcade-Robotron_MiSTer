@@ -607,29 +607,6 @@ arcade_video #(296,8) arcade_video
 
 ///////////////////////////////////////////////////////////////////
 
-wire signed [15:0] audio_signed = {audio, 8'd0} - 16'h8000;
-wire signed [15:0] audio_filtered_signed;
-
-// 1st-order 12kHz Low-Pass Filter
-iir_1st_order #(
-    .COEFF_WIDTH(18),
-    .COEFF_SCALE(15),
-    .DATA_WIDTH(16),
-    .COUNT_BITS(12)
-) audio_lpf (
-    .clk(clk_sys),
-    .reset(reset),
-    .div(12'd256),         // 46.875 kHz sample rate
-    .A2(18'sd613),         // A2
-    .B1(18'sd16691),       // B1
-    .B2(18'sd16690),       // B2
-    .in(audio_signed),
-    .out(audio_filtered_signed)
-);
-
-// 3. Convert back to unsigned for the mix
-wire [15:0] audio_filtered = audio_filtered_signed + 16'h8000;
-
 // Dual 2nd-order IIR filter replicating the Sinistar sound board's cascaded
 // active low-pass filters. Each analog stage is a near-Butterworth 2nd-order
 // section (Q≈0.7). Uses iir_2nd_order_sat to avoid clipping from intermediate
@@ -693,6 +670,32 @@ always @(*) begin
 end
 
 wire [15:0] filtered_speech_unsigned = s_final + 16'h8000;
+
+// --- NEW BOXCAR (AVERAGING) FILTER FOR THE DAC ---
+reg [15:0] audio_accum;
+reg [7:0]  audio_filtered;
+reg [7:0]  accum_cnt;
+
+always @(posedge clk_sys) begin
+    if (reset) begin
+        accum_cnt <= 0;
+        audio_accum <= 0;
+        audio_filtered <= 0;
+    end else begin
+        accum_cnt <= accum_cnt + 1'd1;
+        
+        // On the 256th cycle, calculate the average and reset
+        if (accum_cnt == 8'd255) begin
+            // Divide the sum of 256 samples by 256 (shift right by 8)
+            audio_filtered <= (audio_accum + audio) >> 8;
+            audio_accum <= 0;
+        end else begin
+            // Accumulate the raw DAC steps
+            audio_accum <= audio_accum + audio;
+        end
+    end
+end
+// -------------------------------------------------
 
 logic [16:0] audsum;
 assign audsum = {audio_filtered, 8'd0} + (mod == mod_sinistar ? filtered_speech_unsigned : speech);
