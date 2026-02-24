@@ -85,25 +85,7 @@ architecture struct of williams_sound_board is
  signal pia_pb_i   : std_logic_vector( 7 downto 0);
  signal pia_cb1_i  : std_logic;
 
- constant RC_CHARGE_DELAY : integer := 50000; -- Approx 4ms at 12MHz
- signal pullup_charge     : integer range 0 to RC_CHARGE_DELAY + 1 := 0;
- signal bus_charged       : boolean := false;
-
 begin
-
-process(clock, reset)
-begin
-	if reset = '1' then
-		pullup_charge <= 0;
-		bus_charged <= false;
-	elsif rising_edge(clock) then
-		if pullup_charge < RC_CHARGE_DELAY then
-			pullup_charge <= pullup_charge + 1;
-		else
-			bus_charged <= true;
-		end if;
-	end if;
-end process;
 
 clk089 : work.CEGen
 port map
@@ -135,17 +117,13 @@ cpu_di <=
 -- pia I/O
 audio_out <= pia_pa_o;
 
--- The physical bus sits LOW until the pull-ups charge the capacitance
-pia_pb_i(5 downto 0) <= select_sound(5 downto 0) when bus_charged else "000000";
-
+pia_pb_i(5 downto 0) <= select_sound(5 downto 0);
 pia_pb_i(6) <= '1';
 pia_pb_i(7) <= hand; -- Handshake from rom board rom_pia_pa_out(7)
 
--- The CB1 trigger now behaves exactly as the real physical TTL gate does.
--- When the simulated RC circuit finishes charging, the bus rises to 111111.
--- This creates the natural, organic edge that triggers the sound board.
+
 -- pia Cb1
-pia_cb1_i <= '0' when (pia_pb_i(5 downto 0) = "111111" and hand = '1') else '1';
+pia_cb1_i <= '0' when select_sound = "111111" and hand = '1' else '1';
 
 -- pia irqs to cpu
 cpu_irq  <= pia_irqa or pia_irqb;
