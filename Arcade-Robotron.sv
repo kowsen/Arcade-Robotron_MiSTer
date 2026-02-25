@@ -711,9 +711,9 @@ iir_1st_order #(
     .clk(clk_sys),
     .reset(reset),
     .div(12'd256),         // 46.875 kHz sample rate
-    .A2(18'sd613),         // A2
-    .B1(18'sd16691),       // B1
-    .B2(18'sd16690),       // B2
+    .A2(18'sd620),         // A2
+    .B1(18'sd16694),       // B1
+    .B2(18'sd16694),       // B2
     .in(dac_signed),
     .out(dac_iir_signed)
 );
@@ -723,7 +723,7 @@ wire [15:0] final_audio_unsigned = dac_iir_signed + 16'h8000;
 // -------------------------------------------------
 
 logic [16:0] audsum;
-assign audsum = {final_audio_unsigned, 8'd0} + (mod == mod_sinistar ? filtered_speech_unsigned : speech);
+assign audsum = final_audio_unsigned + (mod == mod_sinistar ? filtered_speech_unsigned : speech);
 assign AUDIO_L = {1'b0, audsum[16:3]};
 assign AUDIO_R = AUDIO_L;
 assign AUDIO_S = 0;
