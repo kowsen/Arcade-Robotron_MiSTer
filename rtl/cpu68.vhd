@@ -3197,8 +3197,8 @@ begin
 							pc_ctrl <= latch_pc;
 							iv_ctrl <= latch_iv;
 							ea_ctrl <= latch_ea;
-							-- idle the bus
-							addr_ctrl <= idle_ad;
+							-- 6800 false write (dummy cycle)
+							addr_ctrl <= write_ad;
 							dout_ctrl <= md_lo_dout;
 							left_ctrl <= md_left;
 							case op_code(3 downto 0) is
@@ -3287,6 +3287,7 @@ begin
 									alu_ctrl <= alu_nop;
 									cc_ctrl <= latch_cc;
 									md_ctrl <= latch_md;
+									addr_ctrl <= idle_ad;
 									next_state <= fetch_state;
 								when "1100" => -- inc
 									right_ctrl <= plus_one_right;
@@ -3303,6 +3304,7 @@ begin
 									alu_ctrl <= alu_st8;
 									cc_ctrl <= load_cc;
 									md_ctrl <= latch_md;
+									addr_ctrl <= idle_ad;
 									if op_code(4) = '0' then -- indexed
 										next_state <= stall2_state;
 									else
@@ -3313,6 +3315,7 @@ begin
 									alu_ctrl <= alu_nop;
 									cc_ctrl <= latch_cc;
 									md_ctrl <= latch_md;
+									addr_ctrl <= idle_ad;
 									next_state <= fetch_state;
 								when "1111" => -- clr
 									right_ctrl <= zero_right;
@@ -3329,6 +3332,7 @@ begin
 									alu_ctrl <= alu_nop;
 									cc_ctrl <= latch_cc;
 									md_ctrl <= latch_md;
+									addr_ctrl <= idle_ad;
 									next_state <= fetch_state;
 						end case;
 
