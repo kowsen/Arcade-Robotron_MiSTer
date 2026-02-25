@@ -711,9 +711,9 @@ iir_1st_order #(
     .clk(clk_sys),
     .reset(reset),
     .div(10'd256),       // Matches the 46.875kHz sample rate from the boxcar
-    .A2(18'sd634),       // Coefficients calculated for ~12kHz cutoff
-    .B1(18'sd16701),
-    .B2(18'sd16701),
+    .A2(18'sd618),       // Coefficients calculated for 12kHz cutoff at 46.875kHz sample rate
+    .B1(18'sd16693),
+    .B2(18'sd16693),
     .in(dac_signed),
     .out(dac_iir_signed)
 );

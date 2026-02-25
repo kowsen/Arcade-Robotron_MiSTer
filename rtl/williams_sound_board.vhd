@@ -88,7 +88,8 @@ architecture struct of williams_sound_board is
  -- Power-On Transient Simulator
  type boot_state_t is (BOOT_IDLE, BOOT_ACTIVE, BOOT_DONE);
  signal boot_state : boot_state_t := BOOT_IDLE;
- signal boot_timer : integer range 0 to 1000000 := 0;
+ signal boot_timer : integer range 0 to 12000000 := 0;
+ signal boot_read_seen : std_logic := '0';
 
 begin
 
@@ -98,9 +99,10 @@ begin
 	if reset = '1' then
 		boot_state <= BOOT_IDLE;
 		boot_timer <= 0;
+		boot_read_seen <= '0';
 	elsif rising_edge(clock) then
 		if boot_state = BOOT_IDLE then
-			-- Wait ~66ms for Sound CPU to be fully ready
+			-- Wait ~66ms for Sound CPU to be fully ready and PIA initialized
 			if boot_timer < 800000 then
 				boot_timer <= boot_timer + 1;
 			else
@@ -108,8 +110,18 @@ begin
 				boot_timer <= 0;
 			end if;
 		elsif boot_state = BOOT_ACTIVE then
-			-- Pulse the synthetic electrical glitch (~8ms)
-			if boot_timer < 100000 then
+			-- Wait for the Sound CPU to actually read the PIA Port B data register
+			if pia_cs = '1' and cpu_rw = '1' and cpu_addr(1 downto 0) = "10" then
+				boot_read_seen <= '1';
+			end if;
+
+			-- Once the read cycle finishes (pia_cs goes low), release the bus safely
+			if boot_read_seen = '1' and pia_cs = '0' then
+				boot_state <= BOOT_DONE;
+			end if;
+
+			-- Fallback timeout (~1 second) just in case
+			if boot_timer < 12000000 then
 				boot_timer <= boot_timer + 1;
 			else
 				boot_state <= BOOT_DONE;
