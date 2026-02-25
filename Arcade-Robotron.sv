@@ -706,14 +706,14 @@ iir_1st_order #(
     .COEFF_WIDTH(18),
     .COEFF_SCALE(15),
     .DATA_WIDTH(16),
-    .COUNT_BITS(10)
-) dac_lpf (
+    .COUNT_BITS(12)
+) dac (
     .clk(clk_sys),
     .reset(reset),
-    .div(10'd256),       // Matches the 46.875kHz sample rate from the boxcar
-    .A2(18'sd618),       // Coefficients calculated for 12kHz cutoff at 46.875kHz sample rate
-    .B1(18'sd16693),
-    .B2(18'sd16693),
+    .div(12'd256),         // 46.875 kHz sample rate
+    .A2(18'sd613),         // A2
+    .B1(18'sd16691),       // B1
+    .B2(18'sd16690),       // B2
     .in(dac_signed),
     .out(dac_iir_signed)
 );

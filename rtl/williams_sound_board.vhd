@@ -85,50 +85,7 @@ architecture struct of williams_sound_board is
  signal pia_pb_i   : std_logic_vector( 7 downto 0);
  signal pia_cb1_i  : std_logic;
 
- -- Power-On Transient Simulator
- type boot_state_t is (BOOT_IDLE, BOOT_ACTIVE, BOOT_DONE);
- signal boot_state : boot_state_t := BOOT_IDLE;
- signal boot_timer : integer range 0 to 12000000 := 0;
- signal boot_read_seen : std_logic := '0';
-
 begin
-
--- Simulate the analog voltage spike that triggers the real board at power-on
-process(clock, reset)
-begin
-	if reset = '1' then
-		boot_state <= BOOT_IDLE;
-		boot_timer <= 0;
-		boot_read_seen <= '0';
-	elsif rising_edge(clock) then
-		if boot_state = BOOT_IDLE then
-			-- Wait ~66ms for Sound CPU to be fully ready and PIA initialized
-			if boot_timer < 800000 then
-				boot_timer <= boot_timer + 1;
-			else
-				boot_state <= BOOT_ACTIVE;
-				boot_timer <= 0;
-			end if;
-		elsif boot_state = BOOT_ACTIVE then
-			-- Wait for the Sound CPU to actually read the PIA Port B data register
-			if pia_cs = '1' and cpu_rw = '1' and cpu_addr(1 downto 0) = "10" then
-				boot_read_seen <= '1';
-			end if;
-
-			-- Once the read cycle finishes (pia_cs goes low), release the bus safely
-			if boot_read_seen = '1' and pia_cs = '0' then
-				boot_state <= BOOT_DONE;
-			end if;
-
-			-- Fallback timeout (~1 second) just in case
-			if boot_timer < 12000000 then
-				boot_timer <= boot_timer + 1;
-			else
-				boot_state <= BOOT_DONE;
-			end if;
-		end if;
-	end if;
-end process;
 
 clk089 : work.CEGen
 port map
@@ -160,14 +117,13 @@ cpu_di <=
 -- pia I/O
 audio_out <= pia_pa_o;
 
--- Force the data lines to 000000 during the active pulse
-pia_pb_i(5 downto 0) <= "000000" when boot_state = BOOT_ACTIVE else select_sound(5 downto 0);
+pia_pb_i(5 downto 0) <= select_sound(5 downto 0);
 pia_pb_i(6) <= '1';
-pia_pb_i(7) <= hand;
+pia_pb_i(7) <= hand; -- Handshake from rom board rom_pia_pa_out(7)
 
--- When the pulse forces pia_pb_i to 000000, this evaluates to '1',
--- creating the exact rising edge needed to trigger the power-on sound!
-pia_cb1_i <= '0' when (pia_pb_i(5 downto 0) = "111111" and hand = '1') else '1';
+
+-- pia Cb1
+pia_cb1_i <= '0' when select_sound = "111111" and hand = '1' else '1';
 
 -- pia irqs to cpu
 cpu_irq  <= pia_irqa or pia_irqb;
