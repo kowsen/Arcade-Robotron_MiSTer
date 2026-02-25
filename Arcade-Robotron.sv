@@ -695,10 +695,35 @@ always @(posedge clk_sys) begin
         end
     end
 end
+
+// --- 2. NEW STEEPER IIR LOW-PASS FILTER (~12 kHz cutoff) ---
+// Convert the unsigned 8-bit boxcar output to a signed 16-bit signal
+wire signed [15:0] dac_signed = {audio_filtered, 8'd0} - 16'h8000;
+wire signed [15:0] dac_iir_signed;
+
+// Pass it through the 1st order IIR filter module already in your project
+iir_1st_order #(
+    .COEFF_WIDTH(18),
+    .COEFF_SCALE(15),
+    .DATA_WIDTH(16),
+    .COUNT_BITS(10)
+) dac_lpf (
+    .clk(clk_sys),
+    .reset(reset),
+    .div(10'd256),       // Matches the 46.875kHz sample rate from the boxcar
+    .A2(18'sd634),       // Coefficients calculated for ~12kHz cutoff
+    .B1(18'sd16701),
+    .B2(18'sd16701),
+    .in(dac_signed),
+    .out(dac_iir_signed)
+);
+
+// Convert back to unsigned
+wire [15:0] final_audio_unsigned = dac_iir_signed + 16'h8000;
 // -------------------------------------------------
 
 logic [16:0] audsum;
-assign audsum = {audio_filtered, 8'd0} + (mod == mod_sinistar ? filtered_speech_unsigned : speech);
+assign audsum = {final_audio_unsigned, 8'd0} + (mod == mod_sinistar ? filtered_speech_unsigned : speech);
 assign AUDIO_L = {1'b0, audsum[16:3]};
 assign AUDIO_R = AUDIO_L;
 assign AUDIO_S = 0;
