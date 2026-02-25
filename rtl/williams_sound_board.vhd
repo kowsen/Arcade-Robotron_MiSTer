@@ -92,7 +92,7 @@ port map
 (
 	CLK     => clock,
 	IN_CLK  => 1200,
-	OUT_CLK => 89,
+	OUT_CLK => 80,
 	CE      => ce_089
 );
 
