@@ -696,7 +696,7 @@ always @(posedge clk_sys) begin
     end
 end
 
-// --- 2. NEW STEEPER IIR LOW-PASS FILTER (~12 kHz cutoff) ---
+// --- 2. NEW STEEPER IIR LOW-PASS FILTER (~10 kHz cutoff) ---
 // Convert the unsigned 8-bit boxcar output to a signed 16-bit signal
 wire signed [15:0] dac_signed = {audio_filtered, 8'd0} - 16'h8000;
 wire signed [15:0] dac_iir_signed;
@@ -711,9 +711,9 @@ iir_1st_order #(
     .clk(clk_sys),
     .reset(reset),
     .div(12'd256),         // 46.875 kHz sample rate
-    .A2(18'sd620),         // A2
-    .B1(18'sd16694),       // B1
-    .B2(18'sd16694),       // B2
+    .A2(-18'sd3842),       // A2 (Now negative, perfectly stable positive pole!)
+    .B1(18'sd14463),       // B1
+    .B2(18'sd14463),       // B2
     .in(dac_signed),
     .out(dac_iir_signed)
 );
