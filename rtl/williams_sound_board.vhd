@@ -85,29 +85,7 @@ architecture struct of williams_sound_board is
  signal pia_pb_i   : std_logic_vector( 7 downto 0);
  signal pia_cb1_i  : std_logic;
 
- signal pia_pa_clean : std_logic_vector( 7 downto 0);
- signal pia_pa_delay : std_logic_vector( 7 downto 0);
-
 begin
-
-glitch_filter : process(clock)
-begin
-  if rising_edge(clock) then
-    if reset = '1' then
-      pia_pa_clean <= (others => '0');
-      pia_pa_delay <= (others => '0');
-    elsif ce_089 = '1' then
-      -- Shift the current PIA output into the delay register
-      pia_pa_delay <= pia_pa_o;
-      
-      -- Only update the clean audio if the PIA output has been stable 
-      -- for at least 2 CPU cycles (filters out the 1-cycle dummy write spike)
-      if pia_pa_o = pia_pa_delay then
-        pia_pa_clean <= pia_pa_o;
-      end if;
-    end if;
-  end if;
-end process;
 
 clk089 : work.CEGen
 port map
@@ -137,7 +115,7 @@ cpu_di <=
 	spch_do when spch_cs  = '1' else X"55";
 
 -- pia I/O
-audio_out <= pia_pa_clean;
+audio_out <= pia_pa_o;
 
 pia_pb_i(5 downto 0) <= select_sound(5 downto 0);
 pia_pb_i(6) <= '1';
