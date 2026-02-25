@@ -173,7 +173,7 @@ port map
 	data_out  	=> pia_do,
 	irqa      	=> pia_irqa,
 	irqb      	=> pia_irqb,
-	pa_i      	=> pia_pa_o,
+	pa_i      	=> (others => '0'),
 	pa_o        => pia_pa_o,
 	pa_oe       => open,
 	ca1       	=> '1',
