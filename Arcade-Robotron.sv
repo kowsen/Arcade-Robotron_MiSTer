@@ -671,7 +671,7 @@ end
 
 wire [15:0] filtered_speech_unsigned = s_final + 16'h8000;
 
-// --- NEW BOXCAR (AVERAGING) FILTER FOR THE DAC ---
+// --- BOXCAR (AVERAGING) FILTER FOR THE DAC ---
 reg [15:0] audio_accum;
 reg [7:0]  audio_filtered;
 reg [7:0]  accum_cnt;
@@ -695,35 +695,10 @@ always @(posedge clk_sys) begin
         end
     end
 end
-
-// --- 2. NEW STEEPER IIR LOW-PASS FILTER (~12 kHz cutoff) ---
-// Convert the unsigned 8-bit boxcar output to a signed 16-bit signal
-wire signed [15:0] dac_signed = {audio_filtered, 8'd0} - 16'h8000;
-wire signed [15:0] dac_iir_signed;
-
-// Pass it through the 1st order IIR filter module already in your project
-iir_1st_order #(
-    .COEFF_WIDTH(18),
-    .COEFF_SCALE(15),
-    .DATA_WIDTH(16),
-    .COUNT_BITS(12)
-) dac (
-    .clk(clk_sys),
-    .reset(reset),
-    .div(12'd256),         // 46.875 kHz sample rate
-    .A2(18'sd620),         // A2
-    .B1(18'sd16694),       // B1
-    .B2(18'sd16694),       // B2
-    .in(dac_signed),
-    .out(dac_iir_signed)
-);
-
-// Convert back to unsigned
-wire [15:0] final_audio_unsigned = dac_iir_signed + 16'h8000;
 // -------------------------------------------------
 
 logic [16:0] audsum;
-assign audsum = final_audio_unsigned + (mod == mod_sinistar ? filtered_speech_unsigned : speech);
+assign audsum = {audio_filtered, 8'd0} + (mod == mod_sinistar ? filtered_speech_unsigned : speech);
 assign AUDIO_L = {1'b0, audsum[16:3]};
 assign AUDIO_R = AUDIO_L;
 assign AUDIO_S = 0;

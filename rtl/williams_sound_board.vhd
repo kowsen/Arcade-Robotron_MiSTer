@@ -92,7 +92,7 @@ port map
 (
 	CLK     => clock,
 	IN_CLK  => 1200,
-	OUT_CLK => 89, -- should be 89 but CPU model works faster than real HW.
+	OUT_CLK => 89,
 	CE      => ce_089
 );
 
@@ -173,7 +173,7 @@ port map
 	data_out  	=> pia_do,
 	irqa      	=> pia_irqa,
 	irqb      	=> pia_irqb,
-	pa_i      	=> (others => '0'),
+	pa_i      	=> pia_pa_o,
 	pa_o        => pia_pa_o,
 	pa_oe       => open,
 	ca1       	=> '1',
