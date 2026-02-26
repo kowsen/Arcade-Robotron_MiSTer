@@ -697,14 +697,14 @@ always @(posedge clk_sys) begin
 end
 
 // 1. MIX THE AUDIO SOURCES FIRST
-// (audio_filtered is scaled up, speech is added if Sinistar is loaded)
 wire [16:0] raw_mix = {audio_filtered, 8'd0} + (mod == mod_sinistar ? filtered_speech_unsigned : speech);
 
 // 2. ANALOG HIGH-PASS FILTER (approx 116 Hz cutoff at 46.8kHz)
-// Simulates the AC-coupling capacitor and speaker response on the final mixed audio
-reg signed [17:0] hpf_x1;
-reg signed [23:0] hpf_y;
-wire signed [17:0] hpf_x0 = {1'b0, raw_mix}; // Convert 17-bit unsigned to 18-bit signed
+// Shift the input up by 8 bits to give the IIR filter internal fractional precision
+wire signed [25:0] hpf_x0 = {1'b0, raw_mix, 8'd0}; 
+
+reg signed [25:0] hpf_x1;
+reg signed [25:0] hpf_y;
 
 always @(posedge clk_sys) begin
     if (reset) begin
@@ -719,15 +719,14 @@ always @(posedge clk_sys) begin
 end
 
 // 3. FINALIZE OUTPUT
-// hpf_y is shifted up by 6 bits due to the math (y >>> 6).
-// We extract the useful 17-bit signed AC waveform from hpf_y[22:6].
-wire signed [16:0] ac_mix = hpf_y[22:6];
+// Shift back down by exactly 8 bits to remove the fractional precision.
+// This gives an 18-bit signed AC signal swinging perfectly around 0.
+wire signed [17:0] ac_mix = hpf_y[25:8];
 
-// The core expects an unsigned signal to pass to the sigma-delta DAC.
-// We add DC offset (17'h10000) to safely center the signed AC waveform.
-wire [16:0] final_mix_unsigned = ac_mix + 17'h10000;
+// Add DC offset (18'h10000) to safely center the signed AC waveform back into unsigned space.
+wire [17:0] final_mix_unsigned = ac_mix + 18'h10000;
 
-// Output the top 14 bits as a 15-bit value (matching your original audsum[16:3] logic)
+// Output the top 14 bits as a 15-bit value (matching the original audsum[16:3] amplitude)
 assign AUDIO_L = {1'b0, final_mix_unsigned[16:3]};
 assign AUDIO_R = AUDIO_L;
 assign AUDIO_S = 0;
