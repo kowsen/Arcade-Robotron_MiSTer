@@ -695,10 +695,33 @@ always @(posedge clk_sys) begin
         end
     end
 end
+
+// --- ROBOTRON ANALOG HPF (approx 116 Hz cutoff at 46.8kHz) ---
+// y[n] = x[n] - x[n-1] + y[n-1] - (y[n-1] >> 6)
+
+reg signed [16:0] hpf_x1;
+reg signed [22:0] hpf_y;
+wire signed [16:0] hpf_x0 = {1'b0, audio_filtered}; // unsigned 16-bit to signed 17-bit
+
+always @(posedge clk_sys) begin
+    if (reset) begin
+        hpf_x1 <= 0;
+        hpf_y  <= 0;
+    end else if (accum_cnt == 8'd255) begin
+        // This block triggers at the exact same ~46.8kHz rate as your boxcar filter
+        hpf_x1 <= hpf_x0;
+        
+        // Calculate new Y: x0 - x1 + y - (y >> 6)
+        hpf_y <= hpf_x0 - hpf_x1 + hpf_y - (hpf_y >>> 6);
+    end
+end
+
+// Grab the top 16 bits of the filter output
+wire [15:0] audio_analog_filtered = hpf_y[21:6] + 16'h8000;
 // -------------------------------------------------
 
 logic [16:0] audsum;
-assign audsum = {audio_filtered, 8'd0} + (mod == mod_sinistar ? filtered_speech_unsigned : speech);
+assign audsum = {audio_analog_filtered, 8'd0} + (mod == mod_sinistar ? filtered_speech_unsigned : speech);
 assign AUDIO_L = {1'b0, audsum[16:3]};
 assign AUDIO_R = AUDIO_L;
 assign AUDIO_S = 0;
