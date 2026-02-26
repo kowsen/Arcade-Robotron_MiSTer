@@ -696,33 +696,39 @@ always @(posedge clk_sys) begin
     end
 end
 
-// --- ROBOTRON ANALOG HPF (approx 116 Hz cutoff at 46.8kHz) ---
-// y[n] = x[n] - x[n-1] + y[n-1] - (y[n-1] >> 6)
+// 1. MIX THE AUDIO SOURCES FIRST
+// (audio_filtered is scaled up, speech is added if Sinistar is loaded)
+wire [16:0] raw_mix = {audio_filtered, 8'd0} + (mod == mod_sinistar ? filtered_speech_unsigned : speech);
 
-reg signed [16:0] hpf_x1;
-reg signed [22:0] hpf_y;
-wire signed [16:0] hpf_x0 = {1'b0, audio_filtered}; // unsigned 16-bit to signed 17-bit
+// 2. ANALOG HIGH-PASS FILTER (approx 116 Hz cutoff at 46.8kHz)
+// Simulates the AC-coupling capacitor and speaker response on the final mixed audio
+reg signed [17:0] hpf_x1;
+reg signed [23:0] hpf_y;
+wire signed [17:0] hpf_x0 = {1'b0, raw_mix}; // Convert 17-bit unsigned to 18-bit signed
 
 always @(posedge clk_sys) begin
     if (reset) begin
         hpf_x1 <= 0;
         hpf_y  <= 0;
     end else if (accum_cnt == 8'd255) begin
-        // This block triggers at the exact same ~46.8kHz rate as your boxcar filter
         hpf_x1 <= hpf_x0;
         
-        // Calculate new Y: x0 - x1 + y - (y >> 6)
+        // y[n] = x[n] - x[n-1] + y[n-1] - (y[n-1] >> 6)
         hpf_y <= hpf_x0 - hpf_x1 + hpf_y - (hpf_y >>> 6);
     end
 end
 
-// Grab the top 16 bits of the filter output
-wire [15:0] audio_analog_filtered = hpf_y[21:6] + 16'h8000;
-// -------------------------------------------------
+// 3. FINALIZE OUTPUT
+// hpf_y is shifted up by 6 bits due to the math (y >>> 6).
+// We extract the useful 17-bit signed AC waveform from hpf_y[22:6].
+wire signed [16:0] ac_mix = hpf_y[22:6];
 
-logic [16:0] audsum;
-assign audsum = {audio_analog_filtered, 8'd0} + (mod == mod_sinistar ? filtered_speech_unsigned : speech);
-assign AUDIO_L = {1'b0, audsum[16:3]};
+// The core expects an unsigned signal to pass to the sigma-delta DAC.
+// We add DC offset (17'h10000) to safely center the signed AC waveform.
+wire [16:0] final_mix_unsigned = ac_mix + 17'h10000;
+
+// Output the top 14 bits as a 15-bit value (matching your original audsum[16:3] logic)
+assign AUDIO_L = {1'b0, final_mix_unsigned[16:3]};
 assign AUDIO_R = AUDIO_L;
 assign AUDIO_S = 0;
 
